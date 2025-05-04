@@ -1,29 +1,28 @@
+// app.module.ts
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { UserModule } from './users/user.module';
+import { MongooseModule } from '@nestjs/mongoose';
+
+import { AuthModule } from './auth/auth.module';
+//import { UserModule } from './users/user.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true }), // .env
 
-    // 기본 커넥션: User DB
+    // ⭐ 반드시 connectionName 을 **최상위**에 둡니다
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        console.log('🔗 USER_DB:', configService.get<string>('MONGO_URI_USER'));
-        return {
-          uri: configService.get<string>('MONGO_URI_USER'),
-        };
-      },
       inject: [ConfigService],
+      useFactory: (cs: ConfigService) => ({
+        uri: cs.get<string>('MONGO_URI_USER'), // 클러스터 URI
+        dbName: 'User', // DB 이름만 따로 줄 수도 있음
+      }),
+      connectionName: 'userConnection', // ← 여기!
     }),
 
-    UserModule,
+    AuthModule,
+    //UserModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
