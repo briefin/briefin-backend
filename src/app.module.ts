@@ -8,9 +8,8 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // .env
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }), // .env
 
-    // ⭐ 반드시 connectionName 을 **최상위**에 둡니다
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

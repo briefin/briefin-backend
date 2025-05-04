@@ -35,6 +35,9 @@ export class User {
 
   @Prop()
   isSocial?: boolean;
+
+  @Prop({ select: false, required: false })
+  currentRefreshToken?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
