@@ -6,7 +6,8 @@ import { AuthGuard as NestAuthGuard } from '@nestjs/passport';
  */
 export interface JwtAuthUser {
   userId: string;
-  role: 'subscriber' | 'publisher';
+  isSubscriber: boolean;
+  isPublisher: boolean;
 }
 
 @Injectable()

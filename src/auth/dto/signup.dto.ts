@@ -5,6 +5,7 @@ import {
   MinLength,
   ValidateIf,
   IsDefined,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -39,14 +40,25 @@ export class SignupDto {
   @IsString()
   socialId?: string;
 
-  // ─── shared ────────────────────────────────────────────────────────────────
+  // ─── profile flags ─────────────────────────────────────────────────────────
 
   @ApiProperty({
-    example: 'subscriber',
-    enum: ['subscriber', 'publisher'],
+    example: true,
+    description: '가입 시 구독자 프로필 보유 여부 (default: true)',
     required: false,
+    default: true,
   })
-  @IsEnum(['subscriber', 'publisher'])
+  @IsBoolean()
   @IsOptional()
-  role?: 'subscriber' | 'publisher' = 'subscriber';
+  isSubscriber: boolean = true;
+
+  @ApiProperty({
+    example: false,
+    description: '퍼블리셔 프로필 보유 여부 (default: false)',
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isPublisher: boolean = false;
 }

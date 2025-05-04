@@ -30,8 +30,12 @@ export class User {
   @Prop()
   socialId?: string;
 
-  @Prop({ enum: ['subscriber', 'publisher'], default: 'subscriber' })
-  role: 'subscriber' | 'publisher';
+  /** === 프로필 플래그 === */
+  @Prop({ default: true })
+  isSubscriber: boolean;
+
+  @Prop({ default: false })
+  isPublisher: boolean;
 
   @Prop()
   isSocial?: boolean;

@@ -19,18 +19,16 @@ export class AuthService {
     @InjectModel(User.name, 'userConnection')
     private userModel: Model<UserDocument>,
     private jwtService: JwtService,
-    private configService: ConfigService, // refreshToken 시 필요하다면
+    private configService: ConfigService,
   ) {}
 
   /** 회원가입 */
   async signup(dto: SignupDto) {
     if (dto.provider === 'local') {
-      // ① runtime guard
       if (!dto.password) {
         throw new BadRequestException('비밀번호는 필수값입니다.');
       }
 
-      // ② username 중복 확인
       const exists = await this.userModel
         .exists({ username: dto.username })
         .exec();
@@ -38,7 +36,6 @@ export class AuthService {
         throw new ConflictException('이미 사용 중인 아이디입니다.');
       }
 
-      // ③ 해싱 (bcrypt/promises → always returns Promise<string>)
       const saltRounds = 10;
       const hash = await bcryptHash(dto.password, saltRounds);
 
@@ -48,133 +45,141 @@ export class AuthService {
       })) as UserDocument;
       // createdUser._id is a mongoose.Types.ObjectId
       const userId = createdUser._id; // ← now clearly a string
-      return { _id: userId };
+      return {
+        _id: userId,
+        isSubscriber: createdUser.isSubscriber,
+        isPublisher: createdUser.isPublisher,
+      };
     }
-    return {};
+
+    // 카카오 가입도 동일하게 플래그를 기본값으로 돌려줍니다.
+    const kakaoUser = await this.userModel.create({
+      provider: 'kakao',
+      socialId: dto.socialId,
+    });
+    const kakaoId = kakaoUser._id;
+    return {
+      _id: kakaoId,
+      isSubscriber: kakaoUser.isSubscriber,
+      isPublisher: kakaoUser.isPublisher,
+    };
   }
 
   /** 로그인 → accessToken 리턴 */
-  // 로컬 로그인입니다.
-  // 카카오 로그인은 카카오 전략에서 처리합니다.
-  async login(dto: LoginDto) {
-    // .lean() returns any by default, so re-cast into your interface
+  async login(dto: LoginDto): Promise<{
+    accessToken: string;
+    userId: string;
+    isSubscriber: boolean;
+    isPublisher: boolean;
+  }> {
     const user = await this.userModel
       .findOne({ username: dto.username })
       .lean<{
         _id: Types.ObjectId;
         password: string;
-        role: 'subscriber' | 'publisher';
-      }>() // ← 여기서 반환 타입을 명시
+        isSubscriber: boolean;
+        isPublisher: boolean;
+      }>()
       .exec();
-    if (!user) throw new UnauthorizedException('아이디 또는 비밀번호 오류');
 
-    const pwOk: boolean = await bcryptCompare(dto.password, user.password);
-    if (!pwOk) throw new UnauthorizedException('아이디 또는 비밀번호 오류');
-
-    // Mongoose documents have a virtual `id: string` (i.e. `._id.toString()`)
-    const payload = {
-      sub: user._id.toString(), // ← Typed as string
-      role: user.role, // ← Typed correctly
-    };
-
-    return {
-      accessToken: await this.jwtService.signAsync(payload),
-      userId: user._id.toString(), // ← Typed as string
-      role: user.role, // ← Typed correctly
-    };
-  }
-  /** 카카오 유저 검증/가입 */
-  async kakaoValidateUser(kakaoId: number): Promise<UserDocument> {
-    // 1) MongoDB에서 kakaoId로 조회 (UserDocument | null 타입)
-    const existingUser = await this.userModel.findOne({ kakaoId }).exec();
-
-    if (existingUser) {
-      // 이미 가입된 유저가 있으면 그대로 반환
-      return existingUser;
+    if (!user) {
+      throw new UnauthorizedException('아이디 또는 비밀번호 오류');
     }
 
-    // 2) 없으면 새로 생성
-    const newUser = await this.userModel.create({
-      kakaoId,
-      provider: 'kakao',
-    });
+    const pwOk = await bcryptCompare(dto.password, user.password);
+    if (!pwOk) {
+      throw new UnauthorizedException('아이디 또는 비밀번호 오류');
+    }
 
-    return newUser;
+    const payload = {
+      sub: user._id.toString(),
+      isSubscriber: user.isSubscriber,
+      isPublisher: user.isPublisher,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    return {
+      accessToken,
+      userId: user._id.toString(),
+      isSubscriber: user.isSubscriber,
+      isPublisher: user.isPublisher,
+    };
   }
-  /** 카카오 로그인 후 accessToken, refreshToken 생성 */
+
+  /** 카카오 유저 검증/가입 */
+  async kakaoValidateUser(kakaoId: number): Promise<UserDocument> {
+    const existingUser = await this.userModel
+      .findOne({ socialId: kakaoId })
+      .exec();
+    if (existingUser) return existingUser;
+    return this.userModel.create({
+      provider: 'kakao',
+      socialId: kakaoId,
+    });
+  }
+
+  /** JWT 생성 (flags 포함) */
   generateAccessToken(user: UserDocument): string {
     const payload = {
       userId: user._id,
+      isSubscriber: user.isSubscriber,
+      isPublisher: user.isPublisher,
     };
     return this.jwtService.sign(payload);
   }
 
-  /** refreshToken 생성 */
-  // refreshToken은 DB에 저장하고, 클라이언트에게는 JWT로 전달합니다.
+  /** refreshToken 생성 & 저장 */
   async generateRefreshToken(user: UserDocument): Promise<string> {
     const payload = {
       userId: user._id,
     };
-
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN'),
     });
 
-    const saltOrRounds = 10;
-    const currentRefreshToken = bcryptHash(refreshToken, saltOrRounds);
-
+    const hashed = await bcryptHash(refreshToken, 10);
     await this.userModel
-      .updateOne(
-        { _id: user._id },
-        { $set: { currentHashedRefreshToken: currentRefreshToken } },
-      )
+      .updateOne({ _id: user._id }, { currentRefreshToken: hashed })
       .exec();
 
-    // 5) 실제 클라이언트에 전달할 토큰 반환
     return refreshToken;
   }
-  /** 클라이언트에서 받은 refreshToken으로 유효성 검사 → 새로운 accessToken 반환 */
+
+  /** 리프레시 토큰으로 액세스 토큰 재발급 */
   async refresh(refreshToken: string): Promise<string> {
+    let decoded: { sub: string };
     try {
-      // 1) JWT 검증 → 반환 타입을 명시
-      const decodedRefreshToken = this.jwtService.verify<{
-        userId: string;
-      }>(refreshToken, {
+      decoded = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET')!,
       });
-      const userId = decodedRefreshToken.userId;
-
-      // 2) DB에서 User 객체 가져오기
-      const user = await this.userModel
-        .findById(userId)
-        .select('+currentRefreshToken') // 스키마에 select: false 처리해뒀다면 ‘+’로 include
-        .exec();
-
-      if (!user || !user.currentRefreshToken) {
-        throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다.');
-      }
-
-      // 3) 토큰 일치 여부 이차 검증
-      const isRefreshTokenMatching = await bcryptCompare(
-        refreshToken,
-        user.currentRefreshToken,
-      );
-      if (!isRefreshTokenMatching) {
-        throw new UnauthorizedException('Invalid refresh-token');
-      }
-
-      // 4) 새로운 accessToken 생성
-      return this.generateAccessToken(user);
     } catch {
       throw new UnauthorizedException('Invalid refresh-token');
     }
+
+    const user = await this.userModel
+      .findById(decoded.sub)
+      .select('+currentRefreshToken')
+      .exec();
+
+    if (!user || !user.currentRefreshToken) {
+      throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다.');
+    }
+
+    const ok = await bcryptCompare(refreshToken, user.currentRefreshToken);
+    if (!ok) {
+      throw new UnauthorizedException('Invalid refresh-token');
+    }
+
+    return this.generateAccessToken(user);
   }
-  /** 카카오 로그인 후 accessToken, refreshToken 생성 */
+
+  /** 카카오 로그인 후 토큰 발급 */
   async getJWT(kakaoId: number) {
-    const user = await this.kakaoValidateUser(kakaoId); // 카카오 정보 검증 및 회원가입 로직
-    const accessToken = this.generateAccessToken(user); // AccessToken 생성
-    const refreshToken = await this.generateRefreshToken(user); // refreshToken 생성
+    const user = await this.kakaoValidateUser(kakaoId);
+    const accessToken = this.generateAccessToken(user);
+    const refreshToken = await this.generateRefreshToken(user);
     return { accessToken, refreshToken };
   }
 }

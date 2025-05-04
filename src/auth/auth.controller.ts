@@ -38,8 +38,14 @@ export class AuthController {
   @HttpCode(201)
   @ApiOperation({ summary: '일반 회원가입' })
   async signup(@Body() dto: SignupDto) {
-    const { _id } = await this.authService.signup(dto);
-    return { message: '회원가입 완료', userId: _id };
+    const { _id, isSubscriber, isPublisher } =
+      await this.authService.signup(dto);
+    return {
+      message: '회원가입 완료',
+      userId: _id,
+      isSubscriber,
+      isPublisher,
+    };
   }
 
   /** 일반 로그인 */
@@ -47,12 +53,14 @@ export class AuthController {
   @HttpCode(200)
   @ApiOperation({ summary: '일반 로그인' })
   async login(@Body() dto: LoginDto) {
-    const { accessToken, userId, role } = await this.authService.login(dto);
+    const { accessToken, userId, isSubscriber, isPublisher } =
+      await this.authService.login(dto);
     return {
       message: '로그인 성공',
       accessToken,
       userId,
-      role,
+      isSubscriber,
+      isPublisher,
     };
   }
 

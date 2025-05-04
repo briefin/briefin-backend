@@ -5,7 +5,8 @@ import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
 
 export interface JwtPayload {
   sub: string; // MongoDB _id
-  role: 'subscriber' | 'publisher';
+  isSubscriber: boolean;
+  isPublisher: boolean;
 }
 
 @Injectable()
@@ -19,6 +20,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload) {
-    return { userId: payload.sub, role: payload.role };
+    return {
+      userId: payload.sub,
+      isSubscriber: payload.isSubscriber,
+      isPublisher: payload.isPublisher,
+    };
   }
 }
