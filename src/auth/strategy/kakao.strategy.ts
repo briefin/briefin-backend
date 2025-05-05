@@ -23,8 +23,8 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     accessToken: string,
     refreshToken: string,
     profile: Profile & { _json: { id: number } },
-  ): Promise<{ kakaoId: number }> {
-    const { id } = profile._json as { id: number };
+  ): Promise<{ kakaoId: string }> {
+    const { id } = profile._json as { id: string };
     return Promise.resolve({ kakaoId: id });
   }
 }

@@ -9,6 +9,7 @@ import { AuthController } from './auth.controller';
 import { KakaoStrategy } from './strategy/kakao.strategy';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { User, UserSchema } from '../users/user.schema';
+import { SubscriberModule } from '../subscribers/subscriber.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { User, UserSchema } from '../users/user.schema';
       [{ name: User.name, schema: UserSchema }],
       'userConnection',
     ),
+    SubscriberModule,
   ],
   providers: [AuthService, JwtStrategy, KakaoStrategy],
   controllers: [AuthController],

@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { User, UserDocument } from '../users/user.schema';
+import { SubscriberService } from '../subscribers/subscriber.service';
 
 @Injectable()
 export class AuthService {
@@ -20,48 +21,59 @@ export class AuthService {
     private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private subscriberService: SubscriberService,
   ) {}
 
   /** 회원가입 */
   async signup(dto: SignupDto) {
-    if (dto.provider === 'local') {
-      if (!dto.password) {
-        throw new BadRequestException('비밀번호는 필수값입니다.');
-      }
-
-      const exists = await this.userModel
-        .exists({ username: dto.username })
-        .exec();
-      if (exists) {
-        throw new ConflictException('이미 사용 중인 아이디입니다.');
-      }
-
-      const saltRounds = 10;
-      const hash = await bcryptHash(dto.password, saltRounds);
-
-      const createdUser = (await this.userModel.create({
-        ...dto,
-        password: hash,
-      })) as UserDocument;
-      // createdUser._id is a mongoose.Types.ObjectId
-      const userId = createdUser._id; // ← now clearly a string
-      return {
-        _id: userId,
-        isSubscriber: createdUser.isSubscriber,
-        isPublisher: createdUser.isPublisher,
-      };
+    if (dto.provider !== 'local') {
+      throw new BadRequestException('지원하지 않는 provider 입니다.');
     }
 
-    // 카카오 가입도 동일하게 플래그를 기본값으로 돌려줍니다.
-    const kakaoUser = await this.userModel.create({
-      provider: 'kakao',
-      socialId: dto.socialId,
-    });
-    const kakaoId = kakaoUser._id;
+    if (!dto.password) {
+      throw new BadRequestException('비밀번호는 필수값입니다.');
+    }
+
+    const exists = await this.userModel.exists({ username: dto.username });
+    if (exists) {
+      throw new ConflictException('이미 사용 중인 아이디입니다.');
+    }
+
+    const hash = await bcryptHash(dto.password, 10);
+    const created = await this.userModel.create({ ...dto, password: hash });
+    const userId = created._id;
+
+    // Subscriber 프로필 생성
+    await this.subscriberService.initProfile(String(userId));
+
+    return this.makeAuthResponse(created);
+  }
+
+  /** 카카오(소셜) 로그인·회원가입 공통 처리 */
+  async loginOrSignupSocial(socialId: string) {
+    // 1) 기존 사용자 조회
+    let user = await this.userModel.findOne({ socialId });
+    if (!user) {
+      // 2) 없으면 생성
+      user = await this.userModel.create({ provider: 'kakao', socialId });
+      // 3) Subscriber 프로필 생성
+      await this.subscriberService.initProfile(String(user._id));
+    }
+    return this.makeAuthResponse(user);
+  }
+
+  /** JWT 발급 및 공통 응답 포맷 */
+  private makeAuthResponse(user: UserDocument) {
+    const payload = {
+      sub: String(user._id),
+      role: user.isPublisher ? 'publisher' : 'subscriber',
+    };
+    const accessToken = this.jwtService.sign(payload);
     return {
-      _id: kakaoId,
-      isSubscriber: kakaoUser.isSubscriber,
-      isPublisher: kakaoUser.isPublisher,
+      accessToken,
+      _id: user._id,
+      isSubscriber: user.isSubscriber,
+      isPublisher: user.isPublisher,
     };
   }
 
@@ -113,10 +125,17 @@ export class AuthService {
       .findOne({ socialId: kakaoId })
       .exec();
     if (existingUser) return existingUser;
-    return this.userModel.create({
+
+    // 1) 유저 생성
+    const newUser = await this.userModel.create({
       provider: 'kakao',
       socialId: kakaoId,
     });
+
+    // 2) Subscriber 프로필 생성
+    await this.subscriberService.initProfile(String(newUser._id));
+
+    return newUser;
   }
 
   /** JWT 생성 (flags 포함) */

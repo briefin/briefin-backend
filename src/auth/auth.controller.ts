@@ -86,6 +86,7 @@ export class AuthController {
     const { kakaoId } = req.user;
     const { accessToken, refreshToken } =
       await this.authService.getJWT(kakaoId);
+    await this.authService.loginOrSignupSocial(String(kakaoId));
 
     // 쿠키 세팅
     res.cookie('accessToken', accessToken, {

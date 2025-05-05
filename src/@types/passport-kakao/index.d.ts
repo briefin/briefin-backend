@@ -2,6 +2,13 @@
 import { Strategy as PassportStrategy } from 'passport';
 import { Profile as PassportProfile } from 'passport';
 
+/** VerifyCallback 타입 정의 */
+export type VerifyCallback = (
+  err: Error | null,
+  user?: any,
+  info?: any,
+) => void;
+
 declare module 'passport-kakao' {
   export class Strategy extends PassportStrategy {
     constructor(
@@ -14,7 +21,7 @@ declare module 'passport-kakao' {
         accessToken: string,
         refreshToken: string,
         profile: PassportProfile & { _json: any },
-        done: (err: Error | null, user?: any) => void,
+        done: VerifyCallback,
       ) => void,
     );
   }

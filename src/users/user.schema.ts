@@ -8,9 +8,6 @@ export class User {
   @Prop({ enum: ['local', 'kakao'], required: true })
   provider: 'local' | 'kakao';
 
-  @Prop({ unique: true, sparse: true })
-  email?: string;
-
   @Prop({
     required: function (this: User) {
       return this.provider === 'local';
