@@ -7,7 +7,20 @@ export function setupSwagger(app: INestApplication) {
     .setTitle('BRIEFIN API 명세')
     .setDescription('briefin api 명세서입니다.')
     .setVersion('1.0')
-    // OAuth2 Authorization Code 플로우 설정
+
+    // 1) Bearer JWT 추가
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description:
+          '발급받은 JWT를 입력하세요.\n예: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+      'access-token', // 이 name을 컨트롤러 @ApiBearerAuth 에서도 사용
+    )
+
+    // 2) 기존 Kakao OAuth2
     .addOAuth2(
       {
         type: 'oauth2',
@@ -15,21 +28,20 @@ export function setupSwagger(app: INestApplication) {
           authorizationCode: {
             authorizationUrl: 'https://kauth.kakao.com/oauth/authorize',
             tokenUrl: 'https://kauth.kakao.com/oauth/token',
-            scopes: {}, // 카카오는 scope 파라미터 없이 동작하므로 빈 객체
+            scopes: {},
           },
         },
       },
-      'kakao-oauth2', // SecurityScheme 이름
+      'kakao-oauth2',
     )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document, {
     swaggerOptions: {
-      oauth2RedirectUrl: 'http://localhost:4000/auth/kakao/callback', // Swagger UI에서 OAuth2 인증 후 리다이렉트될 URL
+      oauth2RedirectUrl: 'http://localhost:4000/auth/kakao/callback',
       oauth: {
-        clientId: process.env.KAKAO_CLIENT_ID!, // .env 에서 불러온 REST API 키
-        //clientSecret: process.env.KAKAO_CLIENT_SECRET, // (선택) 보안 설정 시
+        clientId: process.env.KAKAO_CLIENT_ID!,
         usePkceWithAuthorizationCodeGrant: false,
       },
     },

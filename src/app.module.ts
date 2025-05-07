@@ -5,7 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { AuthModule } from './auth/auth.module';
 import { SubscriberModule } from './subscribers/subscriber.module';
-//import { ScrapFolderModule } from './scrapfolders/scrapfolder.module';
+import { ScrapFolderModule } from './scrapfolders/scrapfolder.module';
 //import { UserModule } from './users/user.module';
 
 @Module({
@@ -47,7 +47,7 @@ import { SubscriberModule } from './subscribers/subscriber.module';
 
     AuthModule,
     SubscriberModule,
-    //ScrapFolderModule,
+    ScrapFolderModule,
     //UserModule,
   ],
 })

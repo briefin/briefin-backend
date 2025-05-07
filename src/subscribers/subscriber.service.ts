@@ -52,17 +52,33 @@ export class SubscriberService {
   }
 
   // 프로필 조회
-  async getProfile(userId: string) {
-    const found = await this.subModel.findOne({ user: userId }).exec();
-    if (!found) throw new NotFoundException('Subscriber not found');
-    return found;
+  async getProfile(userId: string): Promise<Subscriber> {
+    const profile = await this.subModel
+      .findOne({ user: new Types.ObjectId(userId) }) // ← 여기!
+      .exec();
+
+    if (!profile) {
+      throw new NotFoundException('Subscriber not found');
+    }
+    return profile;
   }
 
   // 프로필 수정
   async updateProfile(userId: string, dto: SubscriberDto) {
+    const updateData: Partial<Subscriber> = {};
+    if (dto.nickname !== undefined) updateData.nickname = dto.nickname;
+    if (dto.profileImage !== undefined)
+      updateData.profileImage = dto.profileImage;
+    if (dto.bio !== undefined) updateData.bio = dto.bio;
+
     const updated = await this.subModel
-      .findOneAndUpdate({ user: userId }, dto, { new: true })
+      .findOneAndUpdate(
+        { user: new Types.ObjectId(userId) },
+        { $set: updateData }, // 변경된 필드만 $set
+        { new: true, runValidators: true },
+      )
       .exec();
+
     if (!updated) throw new NotFoundException('Subscriber not found');
     return updated;
   }
