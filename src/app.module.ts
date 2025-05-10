@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { SubscriberModule } from './subscribers/subscriber.module';
 import { ScrapFolderModule } from './scrapfolders/scrapfolder.module';
 //import { UserModule } from './users/user.module';
+import { MagazineModule } from './magazines/magazine.module';
+import { PostModule } from './posts/post.module';
 
 @Module({
   imports: [
@@ -45,9 +47,33 @@ import { ScrapFolderModule } from './scrapfolders/scrapfolder.module';
       connectionName: 'scrapfolderConnection',
     }),
 
+    // 4. Magazine DB 연결 추가
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      connectionName: 'magazineConnection',
+      useFactory: (cs: ConfigService) => ({
+        uri: cs.get<string>('MONGO_URI_MAGAZINE'),
+        dbName: 'Magazine',
+      }),
+    }),
+
+    // 4. Magazine DB 연결 추가
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      connectionName: 'postConnection',
+      useFactory: (cs: ConfigService) => ({
+        uri: cs.get<string>('MONGO_URI_POST'),
+        dbName: 'Post',
+      }),
+    }),
+
     AuthModule,
     SubscriberModule,
     ScrapFolderModule,
+    MagazineModule,
+    PostModule,
     //UserModule,
   ],
 })

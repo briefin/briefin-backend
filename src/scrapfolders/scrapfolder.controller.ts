@@ -5,7 +5,7 @@ import {
   Body,
   UseGuards,
   Req,
-  Patch,
+  Put,
   Param,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -35,7 +35,7 @@ export class ScrapFolderController {
     return this.service.findAll(req.user.userId);
   }
 
-  @Patch(':folderId')
+  @Put(':folderId')
   @ApiOperation({ summary: '폴더 정보(이름/설명/커버) 수정' })
   updateFolder(
     @Req() req: RequestWithUser,

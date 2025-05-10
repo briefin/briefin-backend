@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Subscriber } from '../subscribers/subscriber.schema';
+import { User } from '../users/user.schema';
 
 export type ScrapFolderDocument = ScrapFolder & Document;
 
@@ -11,7 +11,7 @@ export class ScrapFolder {
   name: string;
 
   /** 어느 구독자(subscriber) 소유인지 */
-  @Prop({ type: Types.ObjectId, ref: Subscriber.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
   owner: Types.ObjectId;
 
   /** 스크랩북 설명 */
