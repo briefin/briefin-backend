@@ -9,6 +9,7 @@ import { ScrapFolderModule } from './scrapfolders/scrapfolder.module';
 //import { UserModule } from './users/user.module';
 import { MagazineModule } from './magazines/magazine.module';
 import { PostModule } from './posts/post.module';
+import { PublisherModule } from './publishers/publisher.module';
 
 @Module({
   imports: [
@@ -58,7 +59,7 @@ import { PostModule } from './posts/post.module';
       }),
     }),
 
-    // 4. Magazine DB 연결 추가
+    // 5. Post DB 연결 추가
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -69,12 +70,25 @@ import { PostModule } from './posts/post.module';
       }),
     }),
 
+    // 6. Publisher DB 연결
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (cs: ConfigService) => ({
+        uri: cs.get<string>('MONGO_URI_PUBLISHER'), // 클러스터 URI
+        dbName: 'Publisher', // DB 이름만 따로 줄 수도 있음
+      }),
+      connectionName: 'publisherConnection',
+    }),
+    
+
     AuthModule,
     SubscriberModule,
     ScrapFolderModule,
     MagazineModule,
     PostModule,
     //UserModule,
+    PublisherModule,
   ],
 })
 export class AppModule {}
