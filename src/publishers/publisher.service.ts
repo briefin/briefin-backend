@@ -9,11 +9,11 @@ import { UpdatePublisherDto } from './dto/update-publisher.dto';
 export class PublisherService {
   constructor(
     @InjectModel(Publisher.name, 'publisherConnection')
-    private publisherModel: Model<PublisherDocument>,
+    private readonly publisherModel: Model<PublisherDocument>,
   ) {}
 
   // 유저 ID로 Publisher + User 정보 조회
-  async getByUserId(userId: string) {
+  async getByUserId(userId: string){
     return this.publisherModel
       .findOne({ user: new Types.ObjectId(userId) })
       .populate('user')
@@ -28,8 +28,8 @@ export class PublisherService {
     return `${baseUrl}/static/default-avatar.png`;
   }
 
-  // 프로필 생성
-  async createProfile(userId: string, createPublisherDto: CreatePublisherDto) {
+  // 프로필 생성  + Magazine에서 create와 다르게 await 사용함. 비교를 위해 고치지 않고 이렇게 남겨둠 
+  async createProfile(userId: string, createPublisherDto: CreatePublisherDto) : Promise<Publisher> {
     const created = await this.publisherModel.create({
       user: new Types.ObjectId(userId),
       nickname: createPublisherDto.nickname,

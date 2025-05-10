@@ -6,7 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { SubscriberModule } from './subscribers/subscriber.module';
 import { ScrapFolderModule } from './scrapfolders/scrapfolder.module';
-//import { UserModule } from './users/user.module';
+import { UserModule } from './users/user.module';
 import { MagazineModule } from './magazines/magazine.module';
 import { PostModule } from './posts/post.module';
 import { PublisherModule } from './publishers/publisher.module';
@@ -87,7 +87,7 @@ import { PublisherModule } from './publishers/publisher.module';
     ScrapFolderModule,
     MagazineModule,
     PostModule,
-    //UserModule,
+    UserModule,
     PublisherModule,
   ],
 })

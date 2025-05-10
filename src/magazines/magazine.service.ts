@@ -15,28 +15,28 @@ export class MagazineService {
   // 매거진 생성
   // userId를 받아서 DTO + publisher 필드로 새 문서 생성
   async create(
-    userId: string,
+    publisherId: string,
     createMagazineDto: CreateMagazineDto,
   ): Promise<Magazine> {
     const created = new this.magazineModel({
       ...createMagazineDto,
-      publisher: userId, // 스키마에 맞게 필드 이름
+      publisher: publisherId, // 스키마에 맞게 필드 이름
     });
     return created.save();
   }
 
   // 내 매거진 목록 조회
-  async findAll(userId: string): Promise<Magazine[]> {
+  async findAll(publisherId: string): Promise<Magazine[]> {
     return this.magazineModel
-      .find({ publisher: userId }) // 내 매거진만 조회
+      .find({ publisher: publisherId }) // 내 매거진만 조회
       .populate('publisher')
       .exec();
   }
 
   // 특정 매거진 상세 조회
-  async findOne(userId: string, id: string): Promise<Magazine> {
+  async findOne(id: string): Promise<Magazine> {
     const magazine = await this.magazineModel
-      .findOne({ _id: id, publisher: userId }) // publisher도 같이 검사
+      .findById(id)
       .populate('publisher')
       .exec();
 
@@ -48,12 +48,12 @@ export class MagazineService {
 
   // 매거진 수정
   async update(
-    userId: string,
+    publisherId: string,
     id: string,
     updateMagazineDto: UpdateMagazineDto,
   ): Promise<Magazine> {
     const updated = await this.magazineModel
-      .findOneAndUpdate({ _id: id, publisher: userId }, updateMagazineDto, {
+      .findOneAndUpdate({ _id: id, publisher: publisherId }, updateMagazineDto, {
         new: true,
       })
       .exec();
@@ -65,9 +65,9 @@ export class MagazineService {
   }
 
   // 매거진 삭제
-  async remove(userId: string, id: string): Promise<void> {
+  async remove(publisherId: string, id: string): Promise<void> {
     const result = await this.magazineModel
-      .findOneAndDelete({ _id: id, publisher: userId })
+      .findOneAndDelete({ _id: id, publisher: publisherId })
       .exec();
 
     if (!result) {

@@ -1,8 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-// import { Publisher } from '../publishers/publisher.schema';
-import { Subscriber } from '../subscribers/subscriber.schema';
-
 export type MagazineDocument = Magazine & Document;
 
 @Schema({ timestamps: true })
@@ -16,8 +13,8 @@ export class Magazine {
   description?: string;
 
   /** 소속 퍼블리셔 */
-  /*@Prop({ type: Types.ObjectId, ref: Publisher.name, required: true })
-  publisher: Types.ObjectId;*/
+  @Prop({ type: Types.ObjectId, ref: 'Publisher', required: true })
+  publisher: Types.ObjectId;
 
   /** 매거진 커버 이미지 URL */
   @Prop()
@@ -28,7 +25,7 @@ export class Magazine {
   isPublished: boolean;
 
   /** 구독자 리스트 */
-  @Prop({ type: [Types.ObjectId], ref: Subscriber.name, default: [] })
+  @Prop({ type: [Types.ObjectId], ref: 'Subscriber', default: [] })
   subscribers: Types.ObjectId[];
 }
 
