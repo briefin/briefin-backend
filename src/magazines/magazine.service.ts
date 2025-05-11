@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Magazine, MagazineDocument } from './magazine.schema';
 import { CreateMagazineDto } from './dto/create-magazine.dto';
 import { UpdateMagazineDto } from './dto/update-magazine.dto';
 import { Publisher, PublisherDocument } from 'src/publishers/publisher.schema';
+
 @Injectable()
 export class MagazineService {
   constructor(
@@ -34,25 +35,36 @@ export class MagazineService {
       .lean()
       .exec();
 
-    const populatedMagazines = await this.magazineModel.populate(magazines, {
-      path: 'publisher',
-      model: this.publisherModel,
-    });
-
-    return populatedMagazines;
+    if (!magazines) throw new NotFoundException('Magazines are not found');
+    try {
+      const populatedMagazines = await this.magazineModel.populate(magazines, {
+        path: 'publisher',
+        model: this.publisherModel,
+      });
+      return populatedMagazines;
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to populate publisher data');
+    }
   }
 
   // 특정 매거진 상세 조회
   async findOne(id: string): Promise<Magazine> {
     const magazine = await this.magazineModel
       .findById(id)
-      .populate('publisher')
+      .lean()
       .exec();
 
-    if (!magazine) {
-      throw new NotFoundException(`Magazine with id ${id} not found`);
+    if (!magazine) throw new NotFoundException('Magazine is not found');
+
+    try {
+      const [populated] = await this.magazineModel.populate([magazine], {
+        path: 'publisher',
+        model: this.publisherModel, // ← 명시적으로 모델 지정!
+      });
+      return populated;
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to populate publisher data');
     }
-    return magazine;
   }
 
   // 매거진 수정
