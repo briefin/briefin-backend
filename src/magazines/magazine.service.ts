@@ -4,12 +4,14 @@ import { Model } from 'mongoose';
 import { Magazine, MagazineDocument } from './magazine.schema';
 import { CreateMagazineDto } from './dto/create-magazine.dto';
 import { UpdateMagazineDto } from './dto/update-magazine.dto';
-
+import { Publisher, PublisherDocument } from 'src/publishers/publisher.schema';
 @Injectable()
 export class MagazineService {
   constructor(
     @InjectModel(Magazine.name, 'magazineConnection') // ← 두 번째 인자로 연결 이름
     private readonly magazineModel: Model<MagazineDocument>,
+    @InjectModel(Publisher.name, 'publisherConnection')
+    private readonly publisherModel: Model<PublisherDocument>,
   ) {}
 
   // 매거진 생성
@@ -27,10 +29,17 @@ export class MagazineService {
 
   // 내 매거진 목록 조회
   async findAll(publisherId: string): Promise<Magazine[]> {
-    return this.magazineModel
+    const magazines = await this.magazineModel
       .find({ publisher: publisherId }) // 내 매거진만 조회
-      .populate('publisher')
+      .lean()
       .exec();
+
+    const populatedMagazines = await this.magazineModel.populate(magazines, {
+      path: 'publisher',
+      model: this.publisherModel,
+    });
+
+    return populatedMagazines;
   }
 
   // 특정 매거진 상세 조회
