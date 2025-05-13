@@ -1,12 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { JwtAuthGuard, JwtAuthUser } from './auth/auth.guard';
+import { Request, Response } from 'express';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
+  @UseGuards(JwtAuthGuard)
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  get(
+    @Req() req: Request & { user: JwtAuthUser }, // ← 여기를 이렇게!
+  ) {
+    // 이제 req.user 가 항상 JwtAuthUser 타입으로 인식됩니다.
+    console.log(req.user.userId);
+    return 'JWT 인증 성공';
   }
 }
