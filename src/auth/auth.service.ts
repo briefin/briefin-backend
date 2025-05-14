@@ -34,19 +34,35 @@ export class AuthService {
       throw new BadRequestException('비밀번호는 필수값입니다.');
     }
 
+    // username 중복 체크
+    if (await this.userModel.exists({ username: dto.username })) {
+      throw new ConflictException('이미 사용 중인 아이디입니다.');
+    }
+
+    // email 중복 체크 (추가)
+    if (await this.userModel.exists({ email: dto.email })) {
+      throw new ConflictException('이미 사용 중인 이메일입니다.');
+    }
+
     const exists = await this.userModel.exists({ username: dto.username });
     if (exists) {
       throw new ConflictException('이미 사용 중인 아이디입니다.');
     }
 
     const hash = await bcryptHash(dto.password, 10);
-    const created = await this.userModel.create({ ...dto, password: hash });
-    const userId = created._id;
-
+    const created = await this.userModel.create({
+      provider: dto.provider,
+      name: dto.name,
+      email: dto.email,
+      username: dto.username,
+      password: hash,
+      isSubscriber: dto.isSubscriber,
+      isPublisher: dto.isPublisher,
+    });
     // Subscriber 프로필 생성
-    await this.subscriberService.initProfile(String(userId));
+    await this.subscriberService.initProfile(String(created._id));
 
-    return this.makeAuthResponse(created);
+    return created;
   }
 
   /** 카카오(소셜) 로그인·회원가입 공통 처리 */

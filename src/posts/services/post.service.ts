@@ -4,15 +4,14 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+//import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { Post, PostDocument } from '../post.schema';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
-import { Magazine, MagazineDocument } from '../../magazines/magazine.schema';
+//import { Magazine, MagazineDocument } from '../../magazines/magazine.schema';
 import { MagazineService } from '../../magazines/magazine.service';
 import { PublisherService } from 'src/publishers/publisher.service';
-
-
 
 @Injectable()
 export class PostService {
@@ -32,7 +31,8 @@ export class PostService {
     const magazine = await this.magazineService.findOne(magazineId);
     if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
 
-    if (magazine.publisher.toString() !== publisherId) throw new ForbiddenException('포스트 생성 권한이 없습니다.');
+    if (magazine.publisher.toString() !== publisherId)
+      throw new ForbiddenException('포스트 생성 권한이 없습니다.');
 
     // 2) 생성
     const post = new this.postModel({
@@ -45,7 +45,7 @@ export class PostService {
     return post.save();
   }
 
-  async findAllInMagazine(magazineId: string) {
+  /*async findAllInMagazine(magazineId: string) {
 
      // 1) 매거진 조회해서 퍼블리셔 닉네임 꺼내기
      const magazine = await this.magazineService.findOne(magazineId);
@@ -68,7 +68,7 @@ export class PostService {
       
 
    
-  }
+  }*/
 
   async findOne(magazineId: string, postId: string) {
     const post = await this.postModel
@@ -84,15 +84,17 @@ export class PostService {
     postId: string,
     publisherId: string,
     dto: UpdatePostDto,
-  ) : Promise<Post> {
-    const post = await this.postModel.findOne({
+  ): Promise<Post> {
+    const post = await this.postModel
+      .findOne({
         _id: postId,
         magazine: magazineId,
       })
       .exec();
 
     if (!post) throw new NotFoundException('포스트를 찾을 수 없습니다.');
-    if (post.publisher.toString() !== publisherId) throw new ForbiddenException('수정 권한이 없습니다.');
+    if (post.publisher.toString() !== publisherId)
+      throw new ForbiddenException('수정 권한이 없습니다.');
 
     Object.assign(post, dto);
     return post.save();

@@ -3,21 +3,24 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { PostService } from './services/post.service';
 import { PostController } from './controllers/post.controller';
 import { Post, PostSchema } from './post.schema';
-import { Magazine, MagazineSchema } from '../magazines/magazine.schema';
+//import { Magazine, MagazineSchema } from '../magazines/magazine.schema';
+import { MagazineModule } from '../magazines/magazine.module';
+import { PublisherModule } from '../publishers/publisher.module';
 
 @Module({
   imports: [
-    // Post 모델
+    // Post 모델 바인딩
     MongooseModule.forFeature(
       [{ name: Post.name, schema: PostSchema }],
       'magazineConnection',
     ),
-    // Magazine 모델 (populate 용)
-    MongooseModule.forFeature(
-      [{ name: Magazine.name, schema: MagazineSchema }],
-      'magazineConnection',
-    ),
-    // 만약 Publisher 모델도 별도 DB 연결이라면 같은 방식으로 import
+
+    // MagazineService, MagazineModel 등을 사용하기 위해
+    // MagazineModule 을 import 합니다.
+    MagazineModule,
+
+    // PublisherService 사용을 위해
+    PublisherModule,
   ],
   controllers: [PostController],
   providers: [PostService],

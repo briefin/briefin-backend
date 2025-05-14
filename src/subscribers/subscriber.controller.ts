@@ -1,18 +1,30 @@
 // src/subscriber/subscriber.controller.ts
-import { Controller, Post, Get, Put, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Param,
+  Body,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { SubscriberService } from './subscriber.service';
 import { SubscriberDto } from './dto/subscriber.dto';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-//import { CreateScrapFolderDto } from './dto/create-scrap-folder.dto';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard, JwtAuthUser } from '../auth/auth.guard';
+import { CreateScrapFolderDto } from '../scrapfolders/dto/create-scrapfolder.dto';
 //import { AddPostDto } from './dto/add-post.dto';
 
 @ApiTags('Subscribers')
-@Controller('subscribers')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
+@Controller('me')
 export class SubscriberController {
   constructor(private readonly svc: SubscriberService) {}
 
   // 1) 최초 가입 직후 자동 호출
-  @Post(':userId/profile/init')
+  @Post('subscriber')
   @ApiOperation({
     summary: '최초 가입 이후 자동으로 생성되는 subscriber 프로필',
   })
@@ -25,10 +37,10 @@ export class SubscriberController {
   }
 
   // 2) 프로필 조회
-  @Get(':userId/profile')
+  @Get('profile')
   @ApiOperation({ summary: 'subscriber 프로필 조회' })
-  async getProfile(@Param('userId') userId: string) {
-    const profile = await this.svc.getProfile(userId);
+  async getProfile(@Req() req: Request & { user: JwtAuthUser }) {
+    const profile = await this.svc.getProfile(req.user.userId);
     return {
       message: '프로필을 성공적으로 조회했습니다.',
       data: profile,
@@ -36,52 +48,51 @@ export class SubscriberController {
   }
 
   // 3) 프로필 수정
-  @Put(':userId/profile')
+  @Put('profile')
   @ApiOperation({ summary: 'subscriber 프로필 수정' })
   async updateProfile(
-    @Param('userId') userId: string,
+    @Req() req: Request & { user: JwtAuthUser },
     @Body() dto: SubscriberDto,
   ) {
-    const updated = await this.svc.updateProfile(userId, dto);
+    const updated = await this.svc.updateProfile(req.user.userId, dto);
     return {
       message: '프로필이 성공적으로 업데이트되었습니다.',
       data: updated,
     };
   }
 
-  // 4) 퍼블리셔 구독
-  /*@Post(':userId/subscribe/:publisherId')
-  subscribePublisher(
-    @Param('userId') userId: string,
-    @Param('publisherId') publisherId: string,
+  // 4) 내 스크랩 폴더 조회
+  @Get('folders')
+  @ApiOperation({ summary: '스크랩 폴더 목록 조회' })
+  getFolders(@Req() req: Request & { user: JwtAuthUser }) {
+    return this.svc.getFolders(req.user.userId);
+  }
+
+  // 5) 내가 구독 중인 퍼블리셔 목록 조회
+  @Get('subscriptions/publishers')
+  @ApiOperation({ summary: '구독 중인 퍼블리셔 목록 조회' })
+  async getSubscribedPublishers(@Req() req: Request & { user: JwtAuthUser }) {
+    const pubs = await this.svc.getSubscribedPublishers(req.user.userId);
+    return { message: '구독 중인 퍼블리셔 목록을 가져왔습니다.', data: pubs };
+  }
+
+  // 6) 내 취향 분석 프로필 조회
+  @Get('preferenesprofile')
+  @ApiOperation({ summary: '취향 분석 프로필 조회' })
+  async getPreferenceProfile(@Req() req: Request & { user: JwtAuthUser }) {
+    const pref = await this.svc.getPreferenceProfile(req.user.userId);
+    return { message: '취향 분석 정보를 가져왔습니다.', data: pref };
+  }
+
+  // 7) 좋아요 누른 게시물 조회
+  // 8) 스크랩 폴더 생성
+  @Post('folders')
+  @ApiOperation({ summary: '스크랩 폴더 생성' })
+  async createFolder(
+    @Req() req: Request & { user: JwtAuthUser },
+    @Body() dto: CreateScrapFolderDto,
   ) {
-    return this.svc.subscribePublisher(userId, publisherId);
+    const folder = await this.svc.createFolder(req.user.userId, dto);
+    return { message: '스크랩 폴더가 생성되었습니다.', data: folder };
   }
-
-  // 5) 게시물 좋아요
-  @Post(':userId/like/:postId')
-  likePost(@Param('userId') userId: string, @Param('postId') postId: string) {
-    return this.svc.likePost(userId, postId);
-  }
-
-  // 6) 스크랩 폴더 생성
-  @Post(':userId/folders')
-  createFolder(@Param('userId') userId: string, @Body() dto: ScrapFolderDto) {
-    return this.svc.createFolder(userId, dto);
-  }
-
-  // 7) 스크랩 폴더 조회
-  @Get(':userId/folders')
-  getFolders(@Param('userId') userId: string) {
-    return this.svc.getFolders(userId);
-  }
-
-  // 8) 스크랩 폴더에 게시물 추가
-  @Post('folders/:folderId/posts')
-  addPostToFolder(
-    @Param('folderId') folderId: string,
-    @Body() dto: AddPostDto,
-  ) {
-    return this.svc.addPostToFolder(folderId, dto.postId);
-  }*/
 }

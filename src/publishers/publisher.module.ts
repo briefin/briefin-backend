@@ -12,7 +12,7 @@ import { User, UserSchema } from 'src/users/user.schema';
         { name: Publisher.name, schema: PublisherSchema },
         { name: User.name, schema: UserSchema },
       ],
-      'publisherConnection'
+      'publisherConnection',
     ),
   ],
   providers: [PublisherService],

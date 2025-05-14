@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Magazine } from '../magazines/magazine.schema';
+//import { Magazine } from '../magazines/magazine.schema';
 
 export type PostDocument = Post & Document;
 
@@ -33,7 +33,6 @@ export class Post {
   /** 조회 횟수 */
   @Prop({ default: 0, required: false })
   viewCount?: number;
-
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

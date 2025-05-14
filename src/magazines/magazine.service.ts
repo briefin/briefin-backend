@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Magazine, MagazineDocument } from './magazine.schema';
@@ -42,17 +46,16 @@ export class MagazineService {
         model: this.publisherModel,
       });
       return populatedMagazines;
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to populate publisher data');
+    } catch {
+      throw new InternalServerErrorException(
+        'Failed to populate publisher data',
+      );
     }
   }
 
   // 특정 매거진 상세 조회
   async findOne(id: string): Promise<Magazine> {
-    const magazine = await this.magazineModel
-      .findById(id)
-      .lean()
-      .exec();
+    const magazine = await this.magazineModel.findById(id).lean().exec();
 
     if (!magazine) throw new NotFoundException('Magazine is not found');
 
@@ -62,8 +65,10 @@ export class MagazineService {
         model: this.publisherModel, // ← 명시적으로 모델 지정!
       });
       return populated;
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to populate publisher data');
+    } catch {
+      throw new InternalServerErrorException(
+        'Failed to populate publisher data',
+      );
     }
   }
 
@@ -74,9 +79,13 @@ export class MagazineService {
     updateMagazineDto: UpdateMagazineDto,
   ): Promise<Magazine> {
     const updated = await this.magazineModel
-      .findOneAndUpdate({ _id: id, publisher: publisherId }, updateMagazineDto, {
-        new: true,
-      })
+      .findOneAndUpdate(
+        { _id: id, publisher: publisherId },
+        updateMagazineDto,
+        {
+          new: true,
+        },
+      )
       .exec();
 
     if (!updated) {

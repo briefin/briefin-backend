@@ -80,7 +80,6 @@ import { PublisherModule } from './publishers/publisher.module';
       }),
       connectionName: 'publisherConnection',
     }),
-    
 
     AuthModule,
     SubscriberModule,

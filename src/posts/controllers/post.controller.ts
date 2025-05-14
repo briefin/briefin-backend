@@ -29,11 +29,11 @@ export class PostController {
     return this.postService.create(magazineId, req.user.userId, dto);
   }
 
-  @Get()
+  /*@Get()
   @ApiOperation({ summary: '매거진 내부 포스트 목록 조회' })
   findAll(@Param('magazineId') magazineId: string) {
     return this.postService.findAllInMagazine(magazineId);
-  }
+  }*/
 
   @Get(':postId')
   @ApiOperation({ summary: '매거진 내부 포스트 상세 조회' })

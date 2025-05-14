@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsArray, ArrayNotEmpty, Length, MaxLength} from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  ArrayNotEmpty,
+  Length,
+  MaxLength,
+} from 'class-validator';
 
 export class CreatePostDto {
   @ApiProperty({
@@ -10,7 +18,7 @@ export class CreatePostDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Length(1, 100) 
+  @Length(1, 100)
   title: string;
 
   @ApiProperty({
@@ -25,17 +33,14 @@ export class CreatePostDto {
   //@IsString( {each: true })
   contents: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: '2025년 동묘앞 유행하는 잠옷 패션을 알아보러 떠났다.',
     description: '포스트 설명 (선택)',
     maxLength: 500,
     required: false,
-   })
+  })
   @IsString()
   @IsOptional()
   @MaxLength(500)
   description?: string;
-
 }
-
-

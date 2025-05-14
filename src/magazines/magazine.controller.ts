@@ -39,7 +39,10 @@ export class MagazineController {
     const publisher = await this.publisherService.getByUserId(req.user.userId);
     if (!publisher) throw new NotFoundException('Publisher not found');
     // 2. publisherId로 매거진 생성
-    return this.magazineService.create(publisher._id as string, createMagazineDto);
+    return this.magazineService.create(
+      publisher._id as string,
+      createMagazineDto,
+    );
   } // ...createMagazineDto 를 통해 이 객체의 속성을 돌려주는 것이 프론트에게 도움이 되는지는 추후 피드백 필요
 
   @Get()
@@ -77,7 +80,10 @@ export class MagazineController {
   @Delete(':magazineId')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '매거진 삭제' })
-  async remove(@Req() req: RequestWithUser, @Param('magazineId') magazineId: string) {
+  async remove(
+    @Req() req: RequestWithUser,
+    @Param('magazineId') magazineId: string,
+  ) {
     const publisher = await this.publisherService.getByUserId(req.user.userId);
     if (!publisher) throw new NotFoundException('Publisher not found');
     return this.magazineService.remove(publisher._id as string, magazineId);

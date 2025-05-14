@@ -25,4 +25,4 @@ export class CreatePublisherDto {
   @IsString()
   @IsOptional()
   bio?: string;
-} 
+}
