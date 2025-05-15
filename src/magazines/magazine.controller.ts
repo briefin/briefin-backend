@@ -28,30 +28,43 @@ export class MagazineController {
     private readonly publisherService: PublisherService,
   ) {}
 
-  @Post()
+  /** 1) 내 퍼블리셔 아래 매거진 생성 */
+  @Post(':publisherId')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '매거진 생성' })
+  @ApiOperation({ summary: '매거진 생성 (해당 퍼블리셔로)' })
   async create(
     @Req() req: RequestWithUser,
+    @Param('publisherId') publisherId: string, // <- 여기
     @Body() createMagazineDto: CreateMagazineDto,
   ) {
-    // 1. userId로 publisherId 조회
-    const publisher = await this.publisherService.getByUserId(req.user.userId);
+    // userId + publisherId 로 “내 것”인지 검증하고 불러오기
+    const publisher = await this.publisherService.getOneByUserAndId(
+      req.user.userId,
+      publisherId,
+    );
     if (!publisher) throw new NotFoundException('Publisher not found');
-    // 2. publisherId로 매거진 생성
+
     return this.magazineService.create(
-      publisher._id as string,
+      String(publisher._id),
       createMagazineDto,
     );
-  } // ...createMagazineDto 를 통해 이 객체의 속성을 돌려주는 것이 프론트에게 도움이 되는지는 추후 피드백 필요
+  }
 
-  @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '내 매거진 목록 조회' })
-  async findAll(@Req() req: RequestWithUser) {
-    const publisher = await this.publisherService.getByUserId(req.user.userId);
+  /** 2) 내 퍼블리셔 아래 매거진 전체 조회 */
+  @Get(':publisherId')
+  @ApiOperation({ summary: '내 매거진 목록 조회 (publisherId 지정)' })
+  async findAll(
+    @Req() req: RequestWithUser,
+    @Param('publisherId') publisherId: string,
+  ) {
+    // 소유권 검증
+    const publisher = await this.publisherService.getOneByUserAndId(
+      req.user.userId,
+      publisherId,
+    );
     if (!publisher) throw new NotFoundException('Publisher not found');
-    return this.magazineService.findAll(publisher._id as string);
+
+    return this.magazineService.findAll(String(publisher._id));
   }
 
   @Get(':magazineId')
@@ -60,32 +73,38 @@ export class MagazineController {
     return this.magazineService.findOne(magazineId);
   }
 
-  @Put(':magazineId')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '매거진 수정' })
+  /** 3) 내 퍼블리셔 아래 특정 매거진 수정 */
+  @Put(':publisherId/:magazineId')
+  @ApiOperation({ summary: '매거진 수정 (publisherId 지정)' })
   async update(
     @Req() req: RequestWithUser,
+    @Param('publisherId') publisherId: string,
     @Param('magazineId') magazineId: string,
-    @Body() updateMagazineDto: UpdateMagazineDto,
+    @Body() dto: UpdateMagazineDto,
   ) {
-    const publisher = await this.publisherService.getByUserId(req.user.userId);
-    if (!publisher) throw new NotFoundException('Publisher not found');
-    return this.magazineService.update(
-      publisher._id as string,
-      magazineId,
-      updateMagazineDto,
+    const publisher = await this.publisherService.getOneByUserAndId(
+      req.user.userId,
+      publisherId,
     );
+    if (!publisher) throw new NotFoundException('Publisher not found');
+
+    return this.magazineService.update(String(publisher._id), magazineId, dto);
   }
 
-  @Delete(':magazineId')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '매거진 삭제' })
+  /** 4) 내 퍼블리셔 아래 특정 매거진 삭제 */
+  @Delete(':publisherId/:magazineId')
+  @ApiOperation({ summary: '매거진 삭제 (publisherId 지정)' })
   async remove(
     @Req() req: RequestWithUser,
+    @Param('publisherId') publisherId: string,
     @Param('magazineId') magazineId: string,
   ) {
-    const publisher = await this.publisherService.getByUserId(req.user.userId);
+    const publisher = await this.publisherService.getOneByUserAndId(
+      req.user.userId,
+      publisherId,
+    );
     if (!publisher) throw new NotFoundException('Publisher not found');
-    return this.magazineService.remove(publisher._id as string, magazineId);
+
+    return this.magazineService.remove(String(publisher._id), magazineId);
   }
 }

@@ -14,7 +14,12 @@ import { SubscriberDto } from './dto/subscriber.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, JwtAuthUser } from '../auth/auth.guard';
 import { CreateScrapFolderDto } from '../scrapfolders/dto/create-scrapfolder.dto';
+import { UpdateScrapFolderDto } from '../scrapfolders/dto/update-scrapfolder.dto';
 //import { AddPostDto } from './dto/add-post.dto';
+
+interface RequestWithUser extends Request {
+  user: JwtAuthUser;
+}
 
 @ApiTags('Subscribers')
 @ApiBearerAuth('access-token')
@@ -94,5 +99,15 @@ export class SubscriberController {
   ) {
     const folder = await this.svc.createFolder(req.user.userId, dto);
     return { message: '스크랩 폴더가 생성되었습니다.', data: folder };
+  }
+
+  @Put('folders/:folderId')
+  @ApiOperation({ summary: '폴더 정보(이름/설명/커버) 수정' })
+  updateFolder(
+    @Req() req: RequestWithUser,
+    @Param('folderId') folderId: string,
+    @Body() dto: UpdateScrapFolderDto,
+  ) {
+    return this.svc.updateFolder(req.user.userId, folderId, dto);
   }
 }

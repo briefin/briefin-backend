@@ -8,9 +8,10 @@ import {
   ScrapFolderDocument,
 } from '../scrapfolders/scrapfolder.schema';
 import { SubscriberDto } from './dto/subscriber.dto';
-import { PublisherDocument } from '../publishers/publisher.schema';
+import { Publisher, PublisherDocument } from '../publishers/publisher.schema';
 //import { PreferenceProfile } from './dto/preference-profile.dto';
 import { CreateScrapFolderDto } from '../scrapfolders/dto/create-scrapfolder.dto';
+import { UpdateScrapFolderDto } from '../scrapfolders/dto/update-scrapfolder.dto';
 
 @Injectable()
 export class SubscriberService {
@@ -19,6 +20,8 @@ export class SubscriberService {
     private subModel: Model<SubscriberDocument>,
     @InjectModel(ScrapFolder.name, 'scrapfolderConnection')
     private folderModel: Model<ScrapFolderDocument>,
+    @InjectModel(Publisher.name, 'publisherConnection')
+    private pubModel: Model<PublisherDocument>,
   ) {}
 
   // 기존 메서드들…
@@ -181,4 +184,71 @@ export class SubscriberService {
     });
     return folder.save();
   }
+  // src/subscriber/subscriber.service.ts
+
+  /** 스크랩 폴더 수정 */
+  async updateFolder(
+    userId: string,
+    folderId: string,
+    dto: UpdateScrapFolderDto,
+  ): Promise<ScrapFolderDocument> {
+    // 1) 먼저 Subscriber 문서를 가져온다
+    const subscriber = await this.getProfile(userId);
+
+    // 2) folderId → ObjectId
+    const folderOid = new Types.ObjectId(folderId);
+
+    // 3) owner 는 Subscriber._id 를 써서 매칭
+    const updated = await this.folderModel
+      .findOneAndUpdate(
+        { _id: folderOid, owner: subscriber._id },
+        { $set: dto },
+        { new: true, runValidators: true },
+      )
+      .exec();
+
+    if (!updated) {
+      throw new NotFoundException('Scrap folder not found');
+    }
+    return updated;
+  }
+
+  /**
+   * 특정 퍼블리셔를 구독합니다.
+   * 1) Subscriber.subscribedPublishers에 publisherId 추가
+   * 2) Publisher.subscribers에 subscriber._id 추가
+   */
+  /**
+   * userId(Subscriber.user) 가 특정 publisherId를 구독하게 합니다.
+   */
+  /*async subscribePublisher(
+    userId: string,
+    publisherId: string,
+  ): Promise<SubscriberDocument> {
+    // 1) 내 Subscriber 문서 조회
+    const sub = await this.subModel
+      .findOne({ user: new Types.ObjectId(userId) })
+      .exec();
+    if (!sub) throw new NotFoundException('Subscriber not found');
+
+    // 2) 대상 Publisher 문서 조회
+    const pub = await this.pubModel
+      .findById(new Types.ObjectId(publisherId))
+      .exec();
+    if (!pub) throw new NotFoundException('Publisher not found');
+
+    // 3) Subscriber 쪽 배열에 없으면 추가
+    if (!sub.subscribedPublishers.some((id) => id.equals(pub._id))) {
+      sub.subscribedPublishers.push(pub._id);
+      await sub.save();
+    }
+
+    // 4) Publisher 쪽 subscribers 배열에도 있으면 추가
+    if (!pub.subscribers.some((id) => id.equals(sub._id))) {
+      pub.subscribers.push(sub._id);
+      await pub.save();
+    }
+
+    return sub;
+  }*/
 }

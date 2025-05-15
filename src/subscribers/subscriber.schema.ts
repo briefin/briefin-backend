@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from '../users/user.schema';
 import { Publisher } from '../publishers/publisher.schema';
-import { Magazine } from '../magazines/magazine.schema';
+//import { Magazine } from '../magazines/magazine.schema';
 //import { Post } from '../posts/post.schema';
 import { ScrapFolder } from '../scrapfolders/scrapfolder.schema';
 
@@ -29,10 +29,6 @@ export class Subscriber {
   /** 구독 중인 퍼블리셔 계정 리스트 */
   @Prop({ type: [Types.ObjectId], ref: Publisher.name, default: [] })
   subscribedPublishers: Types.ObjectId[];
-
-  /** 구독 중인 매거진 리스트 */
-  @Prop({ type: [Types.ObjectId], ref: Magazine.name, default: [] })
-  subscribedMagazines: Types.ObjectId[];
 
   /** 좋아요 누른 게시물 리스트 */
   /*Prop({ type: [Types.ObjectId], ref: Post.name, default: [] })

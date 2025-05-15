@@ -6,7 +6,7 @@ export type PublisherDocument = Publisher & Document;
 
 @Schema({ timestamps: true })
 export class Publisher {
-  @Prop({ type: Types.ObjectId, ref: User.name, required: true, unique: true })
+  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
   user: Types.ObjectId;
 
   @Prop({ type: String, required: false })

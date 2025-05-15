@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Publisher, PublisherDocument } from './publisher.schema';
 import { CreatePublisherDto } from './dto/create-publisher.dto';
 import { UpdatePublisherDto } from './dto/update-publisher.dto';
+import { PublicPublisherDto } from './dto/public-publisher.dto';
 
 @Injectable()
 export class PublisherService {
@@ -13,10 +14,26 @@ export class PublisherService {
   ) {}
 
   // 유저 ID로 Publisher + User 정보 조회
-  async getByUserId(userId: string) {
+  async getByUserId(userId: string): Promise<PublisherDocument[]> {
     return this.publisherModel
-      .findOne({ user: new Types.ObjectId(userId) })
-      .populate('user')
+      .find({ user: new Types.ObjectId(userId) }) // ← find() 로 배열 반환
+      .populate('user') // User 스키마의 모든 필드 채워 넣기
+      .exec();
+  }
+
+  /**
+   * userId(내 계정)에 속한 publisherId인지 검증하고,
+   * 맞으면 PublisherDocument, 아니면 null 반환
+   */
+  async getOneByUserAndId(
+    userId: string,
+    publisherId: string,
+  ): Promise<PublisherDocument | null> {
+    return this.publisherModel
+      .findOne({
+        _id: new Types.ObjectId(publisherId),
+        user: new Types.ObjectId(userId),
+      })
       .exec();
   }
 
@@ -47,7 +64,7 @@ export class PublisherService {
   async getProfileByUserId(userId: string): Promise<Publisher> {
     const profile = await this.publisherModel
       .findOne({ user: new Types.ObjectId(userId) })
-      //.populate('user') // 필요시 추가
+      .populate('user') // 필요시 추가
       .populate('publishedMagazines')
       .exec();
 
@@ -58,17 +75,29 @@ export class PublisherService {
   }
 
   // 프로필 조회
-  async getProfile(publisherId: string): Promise<Publisher> {
+  async getPublicProfile(publisherId: string): Promise<PublicPublisherDto> {
     const profile = await this.publisherModel
       .findById(publisherId)
-      //.populate('user') //다른 사람이 퍼블리셔 조회할 때는 필요 없을 것 같은데?
-      //.populate('publishedMagazines')
+      .select('nickname bio profileImage subscribers publishedMagazines')
+      .populate({ path: 'subscribers', select: '_id' })
+      .populate({
+        path: 'publishedMagazines',
+        select: '_id title coverImage',
+      })
+      .lean<PublicPublisherDto>()
       .exec();
 
     if (!profile) {
       throw new NotFoundException('Publisher not found');
     }
-    return profile;
+
+    return {
+      nickname: profile.nickname,
+      bio: profile.bio,
+      subscriberCount: profile.subscribers?.length ?? 0,
+      profileImage: profile.profileImage,
+      publishedMagazines: profile.publishedMagazines,
+    };
   }
 
   // 프로필 수정
