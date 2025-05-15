@@ -16,9 +16,9 @@ import { UpdatePostDto } from '../dto/update-post.dto';
 
 @ApiTags('Posts')
 @Controller('magazines/:magazineId/posts')
-export class PostController {
+export class PostSubscriberController {
   constructor(private readonly postService: PostService) {}
-
+  /*
   @Post()
   @ApiOperation({ summary: '매거진 내부에 포스트 생성' })
   create(
@@ -29,11 +29,11 @@ export class PostController {
     return this.postService.create(magazineId, req.user.userId, dto);
   }
 
-  /*@Get()
+  @Get()
   @ApiOperation({ summary: '매거진 내부 포스트 목록 조회' })
   findAll(@Param('magazineId') magazineId: string) {
     return this.postService.findAllInMagazine(magazineId);
-  }*/
+  }
 
   @Get(':postId')
   @ApiOperation({ summary: '매거진 내부 포스트 상세 조회' })
@@ -64,4 +64,5 @@ export class PostController {
   ) {
     return this.postService.remove(magazineId, postId, req.user.userId);
   }
+    */
 }

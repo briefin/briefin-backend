@@ -16,7 +16,7 @@ import { PublisherService } from 'src/publishers/publisher.service';
 @Injectable()
 export class PostService {
   constructor(
-    @InjectModel(Post.name, 'magazineConnection')
+    @InjectModel(Post.name, 'postConnection')
     private readonly postModel: Model<PostDocument>,
     private readonly magazineService: MagazineService,
     private readonly publisherService: PublisherService,
@@ -31,7 +31,7 @@ export class PostService {
     const magazine = await this.magazineService.findOne(magazineId);
     if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
 
-    if (magazine.publisher.toString() !== publisherId)
+    if (magazine.publisher._id.toString() !== publisherId)
       throw new ForbiddenException('포스트 생성 권한이 없습니다.');
 
     // 2) 생성
@@ -72,8 +72,7 @@ export class PostService {
 
   async findOne(magazineId: string, postId: string) {
     const post = await this.postModel
-      .findOne({ _id: postId, magazine: magazineId })
-      .populate('author', 'name')
+      .findOne({ _id: postId, magazine: magazineId }) //publisher 정보 넣는 건 추가 필요
       .exec();
     if (!post) throw new NotFoundException('포스트를 찾을 수 없습니다.');
     return post;
