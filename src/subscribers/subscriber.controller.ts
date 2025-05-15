@@ -73,12 +73,33 @@ export class SubscriberController {
     return this.svc.getFolders(req.user.userId);
   }
 
+  // 퍼블리셔 구독하기
+  @Post('subscribe/:publisherId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '퍼블리셔 구독하기' })
+  async subscribePublisher(
+    @Req() req: Request & { user: JwtAuthUser },
+    @Param('publisherId') publisherId: string,
+  ) {
+    // JWT 토큰에서 userId 꺼내기
+    const userId = req.user.userId;
+    const updatedSub = await this.svc.subscribePublisher(userId, publisherId);
+    return {
+      message: '구독 완료되었습니다.',
+      data: updatedSub,
+    };
+  }
+
   // 5) 내가 구독 중인 퍼블리셔 목록 조회
   @Get('subscriptions/publishers')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '구독 중인 퍼블리셔 목록 조회' })
   async getSubscribedPublishers(@Req() req: Request & { user: JwtAuthUser }) {
     const pubs = await this.svc.getSubscribedPublishers(req.user.userId);
-    return { message: '구독 중인 퍼블리셔 목록을 가져왔습니다.', data: pubs };
+    return {
+      message: '구독 중인 퍼블리셔 목록을 가져왔습니다.',
+      data: pubs,
+    };
   }
 
   // 6) 내 취향 분석 프로필 조회
@@ -101,6 +122,7 @@ export class SubscriberController {
     return { message: '스크랩 폴더가 생성되었습니다.', data: folder };
   }
 
+  // 스크랩 폴더 수정
   @Put('folders/:folderId')
   @ApiOperation({ summary: '폴더 정보(이름/설명/커버) 수정' })
   updateFolder(

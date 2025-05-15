@@ -95,15 +95,22 @@ export class SubscriberService {
 
   /** 구독 중인 퍼블리셔 목록 조회 */
 
+  // src/subscriber/subscriber.service.ts
+
+  /** 내가 구독 중인 퍼블리셔 목록 조회 */
   async getSubscribedPublishers(userId: string): Promise<PublisherDocument[]> {
+    // 1) Subscriber 문서부터 꺼내고
     const sub = await this.subModel
       .findOne({ user: new Types.ObjectId(userId) })
-      .populate('subscribedPublishers')
-      .lean<{ subscribedPublishers: PublisherDocument[] }>() // ← 제네릭!
       .exec();
-
     if (!sub) throw new NotFoundException('Subscriber not found');
-    return sub.subscribedPublishers;
+
+    // 2) ID 목록만 빼 내서
+    const publisherIds = sub.subscribedPublishers ?? [];
+    if (publisherIds.length === 0) return [];
+
+    // 3) 그 ID 목록으로 publisherConnection 에 등록된 Publisher 를 한 번에 조회
+    return this.pubModel.find({ _id: { $in: publisherIds } }).exec();
   }
 
   /**
@@ -221,34 +228,42 @@ export class SubscriberService {
   /**
    * userId(Subscriber.user) 가 특정 publisherId를 구독하게 합니다.
    */
-  /*async subscribePublisher(
+  async subscribePublisher(
     userId: string,
     publisherId: string,
   ): Promise<SubscriberDocument> {
-    // 1) 내 Subscriber 문서 조회
+    // 1) Subscriber 조회
     const sub = await this.subModel
       .findOne({ user: new Types.ObjectId(userId) })
       .exec();
     if (!sub) throw new NotFoundException('Subscriber not found');
 
-    // 2) 대상 Publisher 문서 조회
+    // 2) Publisher 조회
     const pub = await this.pubModel
       .findById(new Types.ObjectId(publisherId))
       .exec();
     if (!pub) throw new NotFoundException('Publisher not found');
 
-    // 3) Subscriber 쪽 배열에 없으면 추가
-    if (!sub.subscribedPublishers.some((id) => id.equals(pub._id))) {
-      sub.subscribedPublishers.push(pub._id);
+    // 3) 우리가 비교/추가할 ObjectId 인스턴스 미리 생성
+    const publisherOid = new Types.ObjectId(publisherId);
+    const subscriberOid = sub._id as Types.ObjectId;
+
+    // 4) 컴파일러용 안전장치: 절대 undefined 가 될 수 없음을 보장
+    sub.subscribedPublishers = sub.subscribedPublishers ?? [];
+    pub.subscribers = pub.subscribers ?? [];
+
+    // 5) Subscriber → Publisher
+    if (!sub.subscribedPublishers.some((id) => id.equals(publisherOid))) {
+      sub.subscribedPublishers.push(publisherOid);
       await sub.save();
     }
 
-    // 4) Publisher 쪽 subscribers 배열에도 있으면 추가
-    if (!pub.subscribers.some((id) => id.equals(sub._id))) {
-      pub.subscribers.push(sub._id);
+    // 6) Publisher → Subscriber
+    if (!pub.subscribers.some((id) => id.equals(subscriberOid))) {
+      pub.subscribers.push(subscriberOid);
       await pub.save();
     }
 
     return sub;
-  }*/
+  }
 }

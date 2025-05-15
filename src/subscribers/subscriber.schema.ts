@@ -28,7 +28,7 @@ export class Subscriber {
 
   /** 구독 중인 퍼블리셔 계정 리스트 */
   @Prop({ type: [Types.ObjectId], ref: Publisher.name, default: [] })
-  subscribedPublishers: Types.ObjectId[];
+  subscribedPublishers: Types.ObjectId[] = [];
 
   /** 좋아요 누른 게시물 리스트 */
   /*Prop({ type: [Types.ObjectId], ref: Post.name, default: [] })
@@ -36,7 +36,7 @@ export class Subscriber {
 
   /** 스크랩 폴더(ObjectId) 리스트 */
   @Prop({ type: [Types.ObjectId], ref: ScrapFolder.name, default: [] })
-  scrapFolders: Types.ObjectId[];
+  scrapFolders: Types.ObjectId[] = [];
 
   /**
    * 컨텐츠 소비 유형 (구독자 페르소나 중 하나)

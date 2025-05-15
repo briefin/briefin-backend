@@ -24,7 +24,7 @@ export class Publisher {
     required: false,
     default: [],
   })
-  subscribers?: Types.ObjectId[];
+  subscribers: Types.ObjectId[] = [];
 
   @Prop({
     type: [Types.ObjectId],
@@ -32,7 +32,7 @@ export class Publisher {
     required: false,
     default: [],
   })
-  publishedMagazines?: Types.ObjectId[];
+  publishedMagazines?: Types.ObjectId[] = [];
 }
 
 export const PublisherSchema = SchemaFactory.createForClass(Publisher);
