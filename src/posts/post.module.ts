@@ -24,5 +24,6 @@ import { PublisherModule } from '../publishers/publisher.module';
   ],
   controllers: [PostController],
   providers: [PostService],
+  exports: [PostService],
 })
 export class PostModule {}

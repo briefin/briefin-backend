@@ -4,8 +4,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-//import { Model, Types } from 'mongoose';
 import { Model } from 'mongoose';
+//import { Model } from 'mongoose';
 import { Post, PostDocument } from '../post.schema';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
@@ -111,5 +111,39 @@ export class PostService {
       throw new ForbiddenException('삭제 권한이 없습니다.');
 
     return this.postModel.deleteOne({ _id: postId }).exec();
+  }
+
+  /**
+   * 키워드 q 가 제목(title) 또는 본문(content)에 포함된 포스트 검색
+   * q가 유효한 ObjectId 이면 _id 매칭도 수행
+   */
+  async searchPosts(q: string): Promise<PostDocument[]> {
+    return this.postModel
+      .aggregate<PostDocument>([
+        {
+          $search: {
+            index: 'postIndex', // Atlas UI에서 생성한 인덱스 이름
+            text: {
+              query: q,
+              path: ['title', 'content'],
+              fuzzy: { maxEdits: 1, prefixLength: 2 },
+            },
+          },
+        },
+        { $limit: 20 },
+        {
+          $project: {
+            title: 1,
+            content: 1,
+            magazine: 1,
+            publisher: 1,
+            viewCount: 1,
+            createdAt: 1,
+            // 검색 점수(meta)도 필요하면
+            score: { $meta: 'searchScore' },
+          },
+        },
+      ])
+      .exec();
   }
 }
