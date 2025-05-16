@@ -28,6 +28,9 @@ async function bootstrap() {
   // 2) src/assets 폴더를 /static 경로로 노출
   app.use('/static', express.static(join(__dirname, '..', 'src/assets')));
 
+  // 3) uploads 폴더를 /uploads 경로로 노출
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+
   await app.listen(4000, '0.0.0.0');
   console.log('🚀 Server running on http://0.0.0.0:4000');
 }

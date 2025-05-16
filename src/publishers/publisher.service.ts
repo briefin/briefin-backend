@@ -180,4 +180,16 @@ export class PublisherService {
       ])
       .exec();
   }
+
+  /**
+   * 해당 publisherId가 해당 userId의 것인지 확인 (소유 검증)
+   */
+  async isOwner(userId: string, publisherId: string): Promise<boolean> {
+    const publisher = await this.publisherModel.findOne({
+      _id: new Types.ObjectId(publisherId),
+      user: new Types.ObjectId(userId),
+    });
+
+    return !!publisher; // 있으면 true, 없으면 false
+  }
 }

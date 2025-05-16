@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PostService } from './services/post.service';
-import { PostMagazineController } from './controllers/post-publisher.controller';
+import { PostController } from './controllers/post-publisher.controller';
 import { PostSubscriberController } from './controllers/post-subscriber.controller';
 import { Post, PostSchema } from './post.schema';
 //import { Magazine, MagazineSchema } from '../magazines/magazine.schema';
@@ -36,7 +36,7 @@ import { Magazine, MagazineSchema } from 'src/magazines/magazine.schema';
     PublisherModule,
   ],
   providers: [PostService],
-  controllers: [PostMagazineController, PostSubscriberController],
+  controllers: [PostController, PostSubscriberController],
   exports: [PostService],
 })
 export class PostModule {}

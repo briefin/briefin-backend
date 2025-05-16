@@ -1,3 +1,4 @@
+// src/posts/controllers/post.controller.ts
 import {
   Controller,
   Post,
@@ -7,105 +8,137 @@ import {
   Body,
   Param,
   Req,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 
-import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { JwtAuthGuard } from 'src/auth/auth.guard';
 import { PostService } from '../services/post.service';
+import { PublisherService } from 'src/publishers/publisher.service';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
-import { JwtAuthGuard } from 'src/auth/auth.guard';
-import { PublisherService } from 'src/publishers/publisher.service';
-//import { MagazineService } from 'src/magazines/magazine.service';
+import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { multerOptions } from 'src/common/multer.options';
+import { CreatePostBodyDto } from '../dto/create-post-body.dto';
 
+@ApiTags('Posts')
 @ApiBearerAuth('access-token')
-@ApiTags('Post-Magazine')
-//@UseGuards(JwtAuthGuard) 필요하면 밑에 넣기기
-@Controller('posts/:publisherId')
-export class PostMagazineController {
+@Controller('publishers/:publisherId/posts')
+@UseGuards(JwtAuthGuard) // 읽기 전용 API 제외하고 모두 보호
+export class PostController {
   constructor(
     private readonly postService: PostService,
     private readonly publisherService: PublisherService,
-    //private readonly magazineService: MagazineService,
   ) {}
+
+  /* ------------------------------------------------------------------
+     1. 포스트 생성
+  ------------------------------------------------------------------ */
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '퍼블리셔에 해당하는 포스트 생성' })
+  @ApiOperation({ summary: '퍼블리셔가 포스트 생성' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FilesInterceptor('images', 10, multerOptions))
+  @ApiBody({
+    description: '이미지 파일 최대 10개 + 포스트 데이터',
+    required: true,
+    schema: {
+      type: 'object',
+      properties: {
+        images: {
+          // ✅ 필드명 변경
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+        title: { type: 'string' },
+        description: { type: 'string' },
+      },
+    },
+  })
   async create(
     @Req() req: RequestWithUser,
     @Param('publisherId') publisherId: string,
-    @Body() dto: CreatePostDto,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() body: CreatePostBodyDto, // ✅ 본문 전용 DTO
   ) {
-    // userId로 publisher 조회
-    /*const publisher = await this.publisherService.getByUserId(req.user.userId);
-    const publisherId = publisher[0]._id;
-    if (!publisherId)
-      throw new NotFoundException('퍼블리셔를 찾을 수 없습니다.');*/
+    await this.ensureOwnership(req.user.userId, publisherId);
 
-    return this.postService.create(publisherId, dto);
+    if (!files?.length) {
+      throw new BadRequestException('이미지 파일이 최소 1개 필요합니다.');
+    }
+
+    const input: CreatePostDto = {
+      ...body,
+      images: files.map((f) => f.filename),
+    };
+
+    return this.postService.create(publisherId, input);
   }
-  /*
-    @Get('posts')
-    @ApiOperation({ summary: '매거진 내부 포스트 목록 조회' })
-    async findAll(
-        @Param('magazineId') magazineId: string
-    ) {
-        return this.postService.findAllInMagazine(magazineId);
-    }*/ // publisher 정보 불러오는 것 때문에 잠시 보류류
 
+  /* ------------------------------------------------------------------
+     2. 포스트 단건 조회  (인증 불필요 → JwtAuthGuard 해제)
+  ------------------------------------------------------------------ */
   @Get(':postId')
+  @UseGuards() // 보호 해제
   @ApiOperation({ summary: '포스트 상세 조회' })
-  async findOne(
-    //@Param('magazineId') magazineId: string,
-    @Param('postId') postId: string,
-  ) {
+  async findOne(@Param('postId') postId: string) {
     const post = await this.postService.findOne(postId);
     if (!post) throw new NotFoundException('포스트를 찾을 수 없습니다.');
     return post;
   }
 
+  /* ------------------------------------------------------------------
+     3. 포스트 수정
+  ------------------------------------------------------------------ */
   @Patch(':postId')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '포스트 수정(퍼블리셔)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FilesInterceptor('images', 10, multerOptions))
   async update(
     @Req() req: RequestWithUser,
     @Param('publisherId') publisherId: string,
-    //@Param('magazineId') magazineId: string,
     @Param('postId') postId: string,
-    @Body() updatePostDto: UpdatePostDto,
+    @UploadedFiles() images: Express.Multer.File[],
+    @Body() dto: UpdatePostDto,
   ) {
-    /*const publisher = await this.publisherService.getByUserId(req.user.userId);
-    const publisherId = publisher[0]?._id;*/
+    await this.ensureOwnership(req.user.userId, publisherId);
 
-    /*const magazine = await this.magazineService.findOne(magazineId);
-    if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
-    if (magazine.publisher._id.toString() != publisherId) {
-      throw new NotFoundException('수정 권한이 없습니다.');
-    }*/
+    const contents = images?.length
+      ? images.map((f, i) => ({ url: f.filename, order: i }))
+      : undefined; // 이미지가 없으면 그대로 유지
 
-    return this.postService.update(postId, publisherId, updatePostDto);
+    return this.postService.update(postId, publisherId, { ...dto, contents });
   }
 
+  /* ------------------------------------------------------------------
+     4. 포스트 삭제
+  ------------------------------------------------------------------ */
   @Delete(':postId')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '포스트 삭제 (퍼블리셔)' })
+  @ApiOperation({ summary: '포스트 삭제(퍼블리셔)' })
   async remove(
     @Req() req: RequestWithUser,
-    //@Param('magazineId') magazineId: string,
-    @Param('postId') postId: string,
     @Param('publisherId') publisherId: string,
+    @Param('postId') postId: string,
   ) {
-    /*const publisher = await this.publisherService.getByUserId(req.user.userId);
-    const publisherId = publisher[0]?._id;*/
-
-    /*const magazine = await this.magazineService.findOne(magazineId);
-    if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
-    if (magazine.publisher._id.toString() != publisherId) {
-      throw new NotFoundException('삭제 권한이 없습니다.');
-    }*/
-
+    await this.ensureOwnership(req.user.userId, publisherId);
     return this.postService.remove(postId, publisherId);
+  }
+
+  /* ------------------------------------------------------------------
+     ▶︎ 공통: 로그인 사용자 ≠ 퍼블리셔 소유주면 404
+  ------------------------------------------------------------------ */
+  private async ensureOwnership(userId: string, publisherId: string) {
+    const isMine = await this.publisherService.isOwner(userId, publisherId);
+    if (!isMine) throw new NotFoundException('퍼블리셔를 찾을 수 없습니다.');
   }
 }
