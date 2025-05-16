@@ -111,4 +111,34 @@ export class PostService {
 
     return this.postModel.deleteOne({ _id: postId }).exec();
   }
+
+  async searchPosts(q: string): Promise<PostDocument[]> {
+    return this.postModel
+      .aggregate<PostDocument>([
+        {
+          $search: {
+            index: 'postIndex', // Atlas UI에서 생성한 인덱스 이름
+            text: {
+              query: q,
+              path: ['title', 'content'],
+              fuzzy: { maxEdits: 1, prefixLength: 2 },
+            },
+          },
+        },
+        { $limit: 20 },
+        {
+          $project: {
+            title: 1,
+            content: 1,
+            magazine: 1,
+            publisher: 1,
+            viewCount: 1,
+            createdAt: 1,
+            // 검색 점수(meta)도 필요하면
+            score: { $meta: 'searchScore' },
+          },
+        },
+      ])
+      .exec();
+  }
 }

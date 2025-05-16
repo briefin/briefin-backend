@@ -17,7 +17,7 @@ import { PostService } from '../services/post.service';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
 import { JwtAuthGuard } from 'src/auth/auth.guard';
-import { PublisherService } from 'src/publishers/publisher.service';
+import { PublisherService } from 'src/publishers/publisher.service'
 import { MagazineService } from 'src/magazines/magazine.service';
 
 @ApiBearerAuth('access-token')
