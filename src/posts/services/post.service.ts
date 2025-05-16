@@ -23,23 +23,23 @@ export class PostService {
   ) {}
 
   async create(
-    magazineId: string,
+    //magazineId: string,
     publisherId: string,
     dto: CreatePostDto,
   ): Promise<Post> {
     // 1) 매거진 존재 및 권한 검사
-    const magazine = await this.magazineService.findOne(magazineId);
+    /*const magazine = await this.magazineService.findOne(magazineId);
     if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
 
     if (magazine.publisher._id.toString() !== publisherId)
-      throw new ForbiddenException('포스트 생성 권한이 없습니다.');
+      throw new ForbiddenException('포스트 생성 권한이 없습니다.');*/
 
     // 2) 생성
     const post = new this.postModel({
       ...dto,
       publisher: publisherId,
       isPublished: false,
-      magazine: magazineId,
+      //magazine: magazineId,
       viewCount: 0,
     });
     return post.save();
@@ -70,16 +70,18 @@ export class PostService {
    
   }*/
 
-  async findOne(magazineId: string, postId: string) {
+  async findOne(postId: string) {
     const post = await this.postModel
-      .findOne({ _id: postId, magazine: magazineId }) //publisher 정보 넣는 건 추가 필요
+      .findOne({
+        _id: postId,
+      })
       .exec();
     if (!post) throw new NotFoundException('포스트를 찾을 수 없습니다.');
     return post;
   }
 
   async update(
-    magazineId: string,
+    //magazineId: string,
     postId: string,
     publisherId: string,
     dto: UpdatePostDto,
@@ -87,7 +89,6 @@ export class PostService {
     const post = await this.postModel
       .findOne({
         _id: postId,
-        magazine: magazineId,
       })
       .exec();
 
@@ -99,10 +100,9 @@ export class PostService {
     return post.save();
   }
 
-  async remove(magazineId: string, postId: string, publisherId: string) {
+  async remove(postId: string, publisherId: string) {
     const post = await this.postModel.findOne({
       _id: postId,
-      magazine: magazineId,
     });
     if (!post) throw new NotFoundException('포스트를 찾을 수 없습니다.');
 

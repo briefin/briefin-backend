@@ -26,9 +26,9 @@ export class Post {
   @Prop({ default: false, required: false })
   isPublished?: boolean;
 
-  /** 속한 매거진 */
+  /** 속한 매거진 
   @Prop({ type: Types.ObjectId, ref: 'Magazine', required: true })
-  magazine: Types.ObjectId;
+  magazine: Types.ObjectId;*/
 
   /** 조회 횟수 */
   @Prop({ default: 0, required: false })

@@ -17,33 +17,34 @@ import { PostService } from '../services/post.service';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
 import { JwtAuthGuard } from 'src/auth/auth.guard';
-import { PublisherService } from 'src/publishers/publisher.service'
-import { MagazineService } from 'src/magazines/magazine.service';
+import { PublisherService } from 'src/publishers/publisher.service';
+//import { MagazineService } from 'src/magazines/magazine.service';
 
 @ApiBearerAuth('access-token')
 @ApiTags('Post-Magazine')
 //@UseGuards(JwtAuthGuard) 필요하면 밑에 넣기기
-@Controller('magazines/:magazineId')
+@Controller('posts/:publisherId')
 export class PostMagazineController {
   constructor(
     private readonly postService: PostService,
     private readonly publisherService: PublisherService,
-    private readonly magazineService: MagazineService,
+    //private readonly magazineService: MagazineService,
   ) {}
-  @Post('posts')
+  @Post()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '매거진 내부에 포스트 생성 (퍼블리셔)' })
+  @ApiOperation({ summary: '퍼블리셔에 해당하는 포스트 생성' })
   async create(
     @Req() req: RequestWithUser,
-    @Param('magazineId') magazineId: string,
+    @Param('publisherId') publisherId: string,
     @Body() dto: CreatePostDto,
   ) {
     // userId로 publisher 조회
-    const publisher = await this.publisherService.getByUserId(req.user.userId);
+    /*const publisher = await this.publisherService.getByUserId(req.user.userId);
     const publisherId = publisher[0]._id;
     if (!publisherId)
-      throw new NotFoundException('퍼블리셔를 찾을 수 없습니다.');
-    return this.postService.create(magazineId, publisherId.toString(), dto);
+      throw new NotFoundException('퍼블리셔를 찾을 수 없습니다.');*/
+
+    return this.postService.create(publisherId, dto);
   }
   /*
     @Get('posts')
@@ -54,64 +55,57 @@ export class PostMagazineController {
         return this.postService.findAllInMagazine(magazineId);
     }*/ // publisher 정보 불러오는 것 때문에 잠시 보류류
 
-  @Get('posts/:postId')
-  @ApiOperation({ summary: '매거진 내부 포스트 상세 조회' })
+  @Get(':postId')
+  @ApiOperation({ summary: '포스트 상세 조회' })
   async findOne(
-    @Param('magazineId') magazineId: string,
+    //@Param('magazineId') magazineId: string,
     @Param('postId') postId: string,
   ) {
-    const post = await this.postService.findOne(magazineId, postId);
+    const post = await this.postService.findOne(postId);
     if (!post) throw new NotFoundException('포스트를 찾을 수 없습니다.');
     return post;
   }
 
-  @Patch('posts/:postId')
+  @Patch(':postId')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '매거진 내부 포스트 수정 (퍼블리셔)' })
+  @ApiOperation({ summary: '포스트 수정(퍼블리셔)' })
   async update(
     @Req() req: RequestWithUser,
-    @Param('magazineId') magazineId: string,
+    @Param('publisherId') publisherId: string,
+    //@Param('magazineId') magazineId: string,
     @Param('postId') postId: string,
     @Body() updatePostDto: UpdatePostDto,
   ) {
-    const publisher = await this.publisherService.getByUserId(req.user.userId);
-    const publisherId = publisher[0]?._id;
+    /*const publisher = await this.publisherService.getByUserId(req.user.userId);
+    const publisherId = publisher[0]?._id;*/
 
-    const magazine = await this.magazineService.findOne(magazineId);
+    /*const magazine = await this.magazineService.findOne(magazineId);
     if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
     if (magazine.publisher._id.toString() != publisherId) {
       throw new NotFoundException('수정 권한이 없습니다.');
-    }
+    }*/
 
-    return this.postService.update(
-      magazineId,
-      postId,
-      magazine.publisher._id.toString(),
-      updatePostDto,
-    );
+    return this.postService.update(postId, publisherId, updatePostDto);
   }
 
-  @Delete('posts/:postId')
+  @Delete(':postId')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '매거진 내부 포스트 삭제 (퍼블리셔)' })
+  @ApiOperation({ summary: '포스트 삭제 (퍼블리셔)' })
   async remove(
     @Req() req: RequestWithUser,
-    @Param('magazineId') magazineId: string,
+    //@Param('magazineId') magazineId: string,
     @Param('postId') postId: string,
+    @Param('publisherId') publisherId: string,
   ) {
-    const publisher = await this.publisherService.getByUserId(req.user.userId);
-    const publisherId = publisher[0]?._id;
+    /*const publisher = await this.publisherService.getByUserId(req.user.userId);
+    const publisherId = publisher[0]?._id;*/
 
-    const magazine = await this.magazineService.findOne(magazineId);
+    /*const magazine = await this.magazineService.findOne(magazineId);
     if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
     if (magazine.publisher._id.toString() != publisherId) {
       throw new NotFoundException('삭제 권한이 없습니다.');
-    }
+    }*/
 
-    return this.postService.remove(
-      magazineId,
-      postId,
-      magazine.publisher._id.toString(),
-    );
+    return this.postService.remove(postId, publisherId);
   }
 }
