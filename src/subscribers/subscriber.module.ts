@@ -7,16 +7,40 @@ import { Subscriber, SubscriberSchema } from './subscriber.schema';
 } from '../scrapfolders/scrapfolder.schema';*/
 import { SubscriberService } from './subscriber.service';
 import { SubscriberController } from './subscriber.controller';
+import {
+  ScrapFolder,
+  ScrapFolderSchema,
+} from '../scrapfolders/scrapfolder.schema';
+import { Publisher, PublisherSchema } from '../publishers/publisher.schema';
 
 @Module({
   imports: [
+    // (A) SubscriberService용 커넥션
     MongooseModule.forFeature(
-      [{ name: Subscriber.name, schema: SubscriberSchema }],
-      'subscriberConnection', // ← AppModule 에서 만든 connectionName 과 동일해야 합니다.
+      [
+        { name: Subscriber.name, schema: SubscriberSchema },
+        { name: Publisher.name, schema: PublisherSchema },
+      ],
+      'subscriberConnection',
+    ),
+
+    // (B) ScrapFolderService용 커넥션
+    MongooseModule.forFeature(
+      [{ name: ScrapFolder.name, schema: ScrapFolderSchema }],
+      'scrapfolderConnection',
+    ),
+
+    // (C) PublisherService용 커넥션
+    MongooseModule.forFeature(
+      [
+        { name: Publisher.name, schema: PublisherSchema },
+        { name: Subscriber.name, schema: SubscriberSchema },
+      ],
+      'publisherConnection',
     ),
   ],
-  providers: [SubscriberService],
   controllers: [SubscriberController],
-  exports: [SubscriberService], // 다른 모듈에서 쓰려면 export
+  providers: [SubscriberService],
+  exports: [SubscriberService],
 })
 export class SubscriberModule {}

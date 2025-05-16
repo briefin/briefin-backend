@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Publisher, PublisherDocument } from './publisher.schema';
 import { CreatePublisherDto } from './dto/create-publisher.dto';
 import { UpdatePublisherDto } from './dto/update-publisher.dto';
+import { PublicPublisherDto } from './dto/public-publisher.dto';
 
 @Injectable()
 export class PublisherService {
@@ -13,14 +14,28 @@ export class PublisherService {
   ) {}
 
   // 유저 ID로 Publisher + User 정보 조회
-  async getByUserId(userId: string){
+  async getByUserId(userId: string): Promise<PublisherDocument[]> {
     return this.publisherModel
-      .findOne({ user: new Types.ObjectId(userId) })
-      .populate('user')
+      .find({ user: new Types.ObjectId(userId) }) // ← find() 로 배열 반환
+      .populate('user') // User 스키마의 모든 필드 채워 넣기
       .exec();
   }
 
-
+  /**
+   * userId(내 계정)에 속한 publisherId인지 검증하고,
+   * 맞으면 PublisherDocument, 아니면 null 반환
+   */
+  async getOneByUserAndId(
+    userId: string,
+    publisherId: string,
+  ): Promise<PublisherDocument | null> {
+    return this.publisherModel
+      .findOne({
+        _id: new Types.ObjectId(publisherId),
+        user: new Types.ObjectId(userId),
+      })
+      .exec();
+  }
 
   // 랜덤 프로필 이미지 생성
   private generateRandomProfileImageUrl(): string {
@@ -28,12 +43,16 @@ export class PublisherService {
     return `${baseUrl}/static/default-avatar.png`;
   }
 
-  // 프로필 생성  + Magazine에서 create와 다르게 await 사용함. 비교를 위해 고치지 않고 이렇게 남겨둠 
-  async createProfile(userId: string, createPublisherDto: CreatePublisherDto) : Promise<Publisher> {
+  // 프로필 생성  + Magazine에서 create와 다르게 await 사용함. 비교를 위해 고치지 않고 이렇게 남겨둠
+  async createProfile(
+    userId: string,
+    createPublisherDto: CreatePublisherDto,
+  ): Promise<Publisher> {
     const created = await this.publisherModel.create({
       user: new Types.ObjectId(userId),
       nickname: createPublisherDto.nickname,
-      profileImage: createPublisherDto.profileImage || this.generateRandomProfileImageUrl(), //이미지 없을 때 랜덤 이미지지
+      profileImage:
+        createPublisherDto.profileImage || this.generateRandomProfileImageUrl(), //이미지 없을 때 랜덤 이미지지
       bio: createPublisherDto.bio,
       subscribers: [], // 초기에는 빈 배열
       publishedMagazines: [], // 초기에는 빈 배열
@@ -41,13 +60,11 @@ export class PublisherService {
     return created;
   }
 
-
-
   // userId로 Publisher 프로필 조회
   async getProfileByUserId(userId: string): Promise<Publisher> {
     const profile = await this.publisherModel
       .findOne({ user: new Types.ObjectId(userId) })
-      //.populate('user') // 필요시 추가
+      .populate('user') // 필요시 추가
       .populate('publishedMagazines')
       .exec();
 
@@ -56,28 +73,43 @@ export class PublisherService {
     }
     return profile;
   }
-  
+
   // 프로필 조회
-  async getProfile(publisherId: string): Promise<Publisher> {
+  async getPublicProfile(publisherId: string): Promise<PublicPublisherDto> {
     const profile = await this.publisherModel
       .findById(publisherId)
-      //.populate('user') //다른 사람이 퍼블리셔 조회할 때는 필요 없을 것 같은데?
-      //.populate('publishedMagazines')
+      .select('nickname bio profileImage subscribers publishedMagazines')
+      .populate({ path: 'subscribers', select: '_id' })
+      .populate({
+        path: 'publishedMagazines',
+        select: '_id title coverImage',
+      })
+      .lean<PublicPublisherDto>()
       .exec();
 
     if (!profile) {
       throw new NotFoundException('Publisher not found');
     }
-    return profile;
+
+    return {
+      nickname: profile.nickname,
+      bio: profile.bio,
+      subscriberCount: profile.subscribers?.length ?? 0,
+      profileImage: profile.profileImage,
+      publishedMagazines: profile.publishedMagazines,
+    };
   }
 
   // 프로필 수정
   async updateProfile(userId: string, updatePublisherDto: UpdatePublisherDto) {
     const updateData: Partial<Publisher> = {};
-    
-    if (updatePublisherDto.nickname !== undefined) updateData.nickname = updatePublisherDto.nickname;
-    if (updatePublisherDto.profileImage !== undefined) updateData.profileImage = updatePublisherDto.profileImage;
-    if (updatePublisherDto.bio !== undefined) updateData.bio = updatePublisherDto.bio;
+
+    if (updatePublisherDto.nickname !== undefined)
+      updateData.nickname = updatePublisherDto.nickname;
+    if (updatePublisherDto.profileImage !== undefined)
+      updateData.profileImage = updatePublisherDto.profileImage;
+    if (updatePublisherDto.bio !== undefined)
+      updateData.bio = updatePublisherDto.bio;
 
     const updated = await this.publisherModel
       .findOneAndUpdate(
@@ -91,51 +123,73 @@ export class PublisherService {
     return updated;
   }
 
-  /*
-  // 매거진 추가
-  async addMagazine(publisherId: string, magazineId: string) {
-    return this.publisherModel.findOneAndUpdate(
-      { _id: new Types.ObjectId(publisherId) },
-      { $addToSet: { publishedMagazines: new Types.ObjectId(magazineId) } },
-      { new: true },
-    );
-  }
-
-  // 매거진 제거
-  async removeMagazine(publisherId: string, magazineId: string) {
-    return this.publisherModel.findOneAndUpdate(
-      { _id: new Types.ObjectId(publisherId) },
-      { $pull: { publishedMagazines: new Types.ObjectId(magazineId) } },
-      { new: true },
-    );
-  }
-
-  // 구독자 목록 조회
-  async getSubscribers(publisherId: string) {
-    const publisher = await this.publisherModel
-      .findById(publisherId)
-      .populate('subscribers')
+  /**
+   * 여러 개의 Publisher를 _id 배열로 한 번에 조회
+   */
+  async findByIds(ids: string[]): Promise<PublisherDocument[]> {
+    // string[] → ObjectId[]
+    const objectIds = ids.map((id) => new Types.ObjectId(id));
+    return this.publisherModel
+      .find({ _id: { $in: objectIds } })
+      .lean() // lean 쓰면 순수 JS 객체 반환
       .exec();
-    
-    if (!publisher) {
-      throw new NotFoundException('Publisher not found');
-    }
-    
-    return publisher.subscribers;
   }
 
-  // 발행한 매거진 목록 조회
-  async getPublishedMagazines(publisherId: string) {
-    const publisher = await this.publisherModel
-      .findById(publisherId)
-      .populate('publishedMagazines')
+  /**
+   * 내 퍼블리셔 프로필 삭제
+   * @throws NotFoundException if not found or not owned by user
+   */
+  async deleteProfile(userId: string, publisherId: string): Promise<void> {
+    const result = await this.publisherModel
+      .findOneAndDelete({
+        _id: new Types.ObjectId(publisherId),
+        user: new Types.ObjectId(userId),
+      })
       .exec();
-    
-    if (!publisher) {
-      throw new NotFoundException('Publisher not found');
+    if (!result) {
+      throw new NotFoundException(
+        `Publisher with id ${publisherId} not found or not yours`,
+      );
     }
-    
-    return publisher.publishedMagazines;
   }
-  */
+
+  /**
+   * q 에 포함된 nickname, bio, 또는 정확한 id 로 퍼블리셔 검색
+   */
+  async searchPublishers(q: string): Promise<PublisherDocument[]> {
+    return this.publisherModel
+      .aggregate<PublisherDocument>([
+        {
+          $search: {
+            index: 'publisherIndex',
+            text: {
+              query: q,
+              path: ['nickname', 'bio'],
+              fuzzy: { maxEdits: 1, prefixLength: 2 },
+            },
+          },
+        },
+        { $limit: 20 },
+        {
+          $project: {
+            nickname: 1,
+            bio: 1,
+            score: { $meta: 'searchScore' },
+          },
+        },
+      ])
+      .exec();
+  }
+
+  /**
+   * 해당 publisherId가 해당 userId의 것인지 확인 (소유 검증)
+   */
+  async isOwner(userId: string, publisherId: string): Promise<boolean> {
+    const publisher = await this.publisherModel.findOne({
+      _id: new Types.ObjectId(publisherId),
+      user: new Types.ObjectId(userId),
+    });
+
+    return !!publisher; // 있으면 true, 없으면 false
+  }
 }

@@ -1,24 +1,16 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Req,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
-import { PostService } from './post.service';
-import { CreatePostDto } from './dto/create-post.dto';
-import { UpdatePostDto } from './dto/update-post.dto';
+import { Controller } from '@nestjs/common';
+//import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+//import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { PostService } from '../services/post.service';
+//import { CreatePostDto } from '../dto/create-post.dto';
+//import { UpdatePostDto } from '../dto/update-post.dto';
 
 @ApiTags('Posts')
 @Controller('magazines/:magazineId/posts')
-export class PostController {
+export class PostSubscriberController {
   constructor(private readonly postService: PostService) {}
-
+  /*
   @Post()
   @ApiOperation({ summary: '매거진 내부에 포스트 생성' })
   create(
@@ -64,4 +56,5 @@ export class PostController {
   ) {
     return this.postService.remove(magazineId, postId, req.user.userId);
   }
+    */
 }

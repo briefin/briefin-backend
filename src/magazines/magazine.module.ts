@@ -5,6 +5,7 @@ import { MagazineService } from './magazine.service';
 import { MagazineController } from './magazine.controller';
 import { PublisherModule } from '../publishers/publisher.module';
 import { Publisher, PublisherSchema } from 'src/publishers/publisher.schema';
+
 @Module({
   imports: [
     MongooseModule.forFeature(

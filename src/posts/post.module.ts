@@ -1,25 +1,42 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { PostService } from './post.service';
-import { PostController } from './post.controller';
+import { PostService } from './services/post.service';
+import { PostController } from './controllers/post-publisher.controller';
+import { PostSubscriberController } from './controllers/post-subscriber.controller';
 import { Post, PostSchema } from './post.schema';
-import { Magazine, MagazineSchema } from '../magazines/magazine.schema';
+//import { Magazine, MagazineSchema } from '../magazines/magazine.schema';
+import { MagazineModule } from '../magazines/magazine.module';
+import { PublisherModule } from '../publishers/publisher.module';
+import { PublisherSchema } from 'src/publishers/publisher.schema';
+import { Publisher } from 'src/publishers/publisher.schema';
+import { Magazine, MagazineSchema } from 'src/magazines/magazine.schema';
 
 @Module({
   imports: [
-    // Post 모델
+    // Post 모델 바인딩
     MongooseModule.forFeature(
       [{ name: Post.name, schema: PostSchema }],
-      'magazineConnection',
+      'postConnection',
     ),
-    // Magazine 모델 (populate 용)
+
+    MongooseModule.forFeature(
+      [{ name: Publisher.name, schema: PublisherSchema }],
+      'publisherConnection',
+    ),
     MongooseModule.forFeature(
       [{ name: Magazine.name, schema: MagazineSchema }],
       'magazineConnection',
     ),
-    // 만약 Publisher 모델도 별도 DB 연결이라면 같은 방식으로 import
+
+    // MagazineService, MagazineModel 등을 사용하기 위해
+    // MagazineModule 을 import 합니다.
+    MagazineModule,
+
+    // PublisherService 사용을 위해
+    PublisherModule,
   ],
-  controllers: [PostController],
   providers: [PostService],
+  controllers: [PostController, PostSubscriberController],
+  exports: [PostService],
 })
 export class PostModule {}
