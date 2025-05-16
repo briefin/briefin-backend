@@ -24,10 +24,6 @@ export class Magazine {
   /** 발행 여부 */
   @Prop({ default: false })
   isPublished: boolean;
-
-  /** 구독자 리스트 */
-  @Prop({ type: [Types.ObjectId], ref: 'Subscriber', default: [] })
-  subscribers: Types.ObjectId[];
 }
 
 export const MagazineSchema = SchemaFactory.createForClass(Magazine);

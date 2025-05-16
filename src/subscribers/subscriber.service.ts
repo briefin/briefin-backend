@@ -10,8 +10,8 @@ import {
 import { SubscriberDto } from './dto/subscriber.dto';
 import { Publisher, PublisherDocument } from '../publishers/publisher.schema';
 //import { PreferenceProfile } from './dto/preference-profile.dto';
-import { CreateScrapFolderDto } from '../scrapfolders/dto/create-scrapfolder.dto';
-import { UpdateScrapFolderDto } from '../scrapfolders/dto/update-scrapfolder.dto';
+//import { CreateScrapFolderDto } from '../scrapfolders/dto/create-scrapfolder.dto';
+//import { UpdateScrapFolderDto } from '../scrapfolders/dto/update-scrapfolder.dto';
 
 @Injectable()
 export class SubscriberService {
@@ -24,7 +24,6 @@ export class SubscriberService {
     private pubModel: Model<PublisherDocument>,
   ) {}
 
-  // 기존 메서드들…
   async getByUserId(userId: string) {
     return this.subModel.findOne({ user: userId }).populate('user').exec();
   }
@@ -173,51 +172,6 @@ export class SubscriberService {
       scrapFoldersCount,
       consumeType, // 이제 항상 문자열이 보장됩니다
     };
-  }
-
-  /**
-   * 스크랩 폴더 생성
-   */
-  async createFolder(
-    userId: string,
-    dto: CreateScrapFolderDto,
-  ): Promise<ScrapFolderDocument> {
-    const sub = await this.getProfile(userId);
-    const folder = new this.folderModel({
-      owner: sub._id, // ← 여기
-      name: dto.name,
-      description: dto.description,
-      coverImage: dto.coverImage,
-    });
-    return folder.save();
-  }
-  // src/subscriber/subscriber.service.ts
-
-  /** 스크랩 폴더 수정 */
-  async updateFolder(
-    userId: string,
-    folderId: string,
-    dto: UpdateScrapFolderDto,
-  ): Promise<ScrapFolderDocument> {
-    // 1) 먼저 Subscriber 문서를 가져온다
-    const subscriber = await this.getProfile(userId);
-
-    // 2) folderId → ObjectId
-    const folderOid = new Types.ObjectId(folderId);
-
-    // 3) owner 는 Subscriber._id 를 써서 매칭
-    const updated = await this.folderModel
-      .findOneAndUpdate(
-        { _id: folderOid, owner: subscriber._id },
-        { $set: dto },
-        { new: true, runValidators: true },
-      )
-      .exec();
-
-    if (!updated) {
-      throw new NotFoundException('Scrap folder not found');
-    }
-    return updated;
   }
 
   /**

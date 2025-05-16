@@ -1,32 +1,63 @@
-import { Controller, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+// src/scrapfolders/scrapfolder.controller.ts
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Req,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ScrapFolderService } from './scrapfolder.service';
-//import { CreateScrapFolderDto } from './dto/create-scrapfolder.dto';
-//import { UpdateScrapFolderDto } from './dto/update-scrapfolder.dto';
-//import { AddPostDto } from './dto/add-post.dto';
-import { JwtAuthGuard } from '../auth/auth.guard';
-//import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
+import { JwtAuthGuard, JwtAuthUser } from '../auth/auth.guard';
+import { CreateScrapFolderDto } from './dto/create-scrapfolder.dto';
+import { UpdateScrapFolderDto } from './dto/update-scrapfolder.dto';
 
-@ApiTags('Scrap Folders')
+@ApiTags('ScrapFolders')
 @ApiBearerAuth('access-token')
-@Controller('folders')
 @UseGuards(JwtAuthGuard)
+@Controller('me/folders')
 export class ScrapFolderController {
-  constructor(private readonly service: ScrapFolderService) {}
+  constructor(private readonly svc: ScrapFolderService) {}
 
-  /*@Post(':folderId/posts')
-  @ApiOperation({ summary: '폴더에 게시물 추가' })
-  addPost(
-    @Request() req,
-    @Param('folderId') folderId: string,
-    @Body() dto: AddPostDto,
-  ) {
-    return this.service.addPost(req.user.userId, folderId, dto);
+  @Get()
+  @ApiOperation({ summary: '내 스크랩 폴더 목록 조회' })
+  async getFolders(@Req() req: Request & { user: JwtAuthUser }) {
+    const list = await this.svc.getFolders(req.user.userId);
+    return { message: '스크랩 폴더 목록입니다.', data: list };
   }
 
-  @Get(':folderId/posts')
-  @ApiOperation({ summary: '폴더 내 게시물 조회' })
-  findPosts(@Request() req, @Param('folderId') folderId: string) {
-    return this.service.findPosts(req.user.userId, folderId);
-  }*/
+  @Post()
+  @ApiOperation({ summary: '스크랩 폴더 생성' })
+  async createFolder(
+    @Req() req: Request & { user: JwtAuthUser },
+    @Body() dto: CreateScrapFolderDto,
+  ) {
+    const folder = await this.svc.createFolder(req.user.userId, dto);
+    return { message: '폴더가 생성되었습니다.', data: folder };
+  }
+
+  @Put(':folderId')
+  @ApiOperation({ summary: '스크랩 폴더 수정' })
+  async updateFolder(
+    @Req() req: Request & { user: JwtAuthUser },
+    @Param('folderId') folderId: string,
+    @Body() dto: UpdateScrapFolderDto,
+  ) {
+    const updated = await this.svc.updateFolder(req.user.userId, folderId, dto);
+    return { message: '폴더가 수정되었습니다.', data: updated };
+  }
+
+  @Delete(':folderId')
+  @ApiOperation({ summary: '스크랩 폴더 삭제' })
+  async deleteFolder(
+    @Req() req: Request & { user: JwtAuthUser },
+    @Param('folderId') folderId: string,
+  ) {
+    await this.svc.deleteFolder(req.user.userId, folderId);
+    return { message: '폴더가 삭제되었습니다.' };
+  }
 }

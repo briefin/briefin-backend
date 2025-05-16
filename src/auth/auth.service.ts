@@ -217,4 +217,22 @@ export class AuthService {
     const refreshToken = await this.generateRefreshToken(user);
     return { accessToken, refreshToken };
   }
+
+  /**
+   * 카카오 OAuth 로그인용 Redirect URL 생성
+   */
+  getKakaoRedirectUrl(): string {
+    const base = 'https://kauth.kakao.com/oauth/authorize';
+
+    const clientId = this.configService.getOrThrow<string>('KAKAO_CLIENT_ID');
+    const redirectUri =
+      this.configService.getOrThrow<string>('KAKAO_CALLBACK_URL');
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+    });
+
+    return `${base}?${params.toString()}`;
+  }
 }

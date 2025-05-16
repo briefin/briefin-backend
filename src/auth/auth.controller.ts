@@ -174,4 +174,11 @@ export class AuthController {
       throw new UnauthorizedException('토큰 갱신 실패');
     }
   }
+
+  @Get('auth/kakao/url')
+  @ApiOperation({ summary: '카카오 로그인 URL 가져오기' })
+  getKakaoUrl() {
+    const url = this.authService.getKakaoRedirectUrl();
+    return { url };
+  }
 }

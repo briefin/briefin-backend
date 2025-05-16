@@ -10,6 +10,7 @@ import { UserModule } from './users/user.module';
 import { MagazineModule } from './magazines/magazine.module';
 import { PostModule } from './posts/post.module';
 import { PublisherModule } from './publishers/publisher.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { PublisherModule } from './publishers/publisher.module';
     PostModule,
     UserModule,
     PublisherModule,
+    SearchModule,
   ],
 })
 export class AppModule {}

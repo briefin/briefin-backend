@@ -1,5 +1,13 @@
-// src/publishers/me.publisher.controller.ts
-import { Controller, Post, Get, Req, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete, // ← 추가
+  Req,
+  Param, // ← 추가
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { PublisherService } from './publisher.service';
@@ -25,5 +33,15 @@ export class MePublisherController {
   async getMine(@Req() req: RequestWithUser): Promise<PublisherDocument[]> {
     // ← 배열 반환
     return this.publisherService.getByUserId(req.user.userId);
+  }
+
+  @Delete(':publisherId')
+  @ApiOperation({ summary: '내 퍼블리셔 프로필 삭제' })
+  async deleteProfile(
+    @Req() req: RequestWithUser,
+    @Param('publisherId') publisherId: string,
+  ) {
+    await this.publisherService.deleteProfile(req.user.userId, publisherId);
+    return { message: '퍼블리셔 프로필이 삭제되었습니다.' };
   }
 }

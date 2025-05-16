@@ -135,51 +135,49 @@ export class PublisherService {
       .exec();
   }
 
-  /*
-  // 매거진 추가
-  async addMagazine(publisherId: string, magazineId: string) {
-    return this.publisherModel.findOneAndUpdate(
-      { _id: new Types.ObjectId(publisherId) },
-      { $addToSet: { publishedMagazines: new Types.ObjectId(magazineId) } },
-      { new: true },
-    );
-  }
-
-  // 매거진 제거
-  async removeMagazine(publisherId: string, magazineId: string) {
-    return this.publisherModel.findOneAndUpdate(
-      { _id: new Types.ObjectId(publisherId) },
-      { $pull: { publishedMagazines: new Types.ObjectId(magazineId) } },
-      { new: true },
-    );
-  }
-
-  // 구독자 목록 조회
-  async getSubscribers(publisherId: string) {
-    const publisher = await this.publisherModel
-      .findById(publisherId)
-      .populate('subscribers')
+  /**
+   * 내 퍼블리셔 프로필 삭제
+   * @throws NotFoundException if not found or not owned by user
+   */
+  async deleteProfile(userId: string, publisherId: string): Promise<void> {
+    const result = await this.publisherModel
+      .findOneAndDelete({
+        _id: new Types.ObjectId(publisherId),
+        user: new Types.ObjectId(userId),
+      })
       .exec();
-    
-    if (!publisher) {
-      throw new NotFoundException('Publisher not found');
+    if (!result) {
+      throw new NotFoundException(
+        `Publisher with id ${publisherId} not found or not yours`,
+      );
     }
-    
-    return publisher.subscribers;
   }
 
-  // 발행한 매거진 목록 조회
-  async getPublishedMagazines(publisherId: string) {
-    const publisher = await this.publisherModel
-      .findById(publisherId)
-      .populate('publishedMagazines')
+  /**
+   * q 에 포함된 nickname, bio, 또는 정확한 id 로 퍼블리셔 검색
+   */
+  async searchPublishers(q: string): Promise<PublisherDocument[]> {
+    return this.publisherModel
+      .aggregate<PublisherDocument>([
+        {
+          $search: {
+            index: 'publisherIndex',
+            text: {
+              query: q,
+              path: ['nickname', 'bio'],
+              fuzzy: { maxEdits: 1, prefixLength: 2 },
+            },
+          },
+        },
+        { $limit: 20 },
+        {
+          $project: {
+            nickname: 1,
+            bio: 1,
+            score: { $meta: 'searchScore' },
+          },
+        },
+      ])
       .exec();
-    
-    if (!publisher) {
-      throw new NotFoundException('Publisher not found');
-    }
-    
-    return publisher.publishedMagazines;
   }
-  */
 }

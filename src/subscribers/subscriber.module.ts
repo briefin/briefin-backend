@@ -15,28 +15,32 @@ import { Publisher, PublisherSchema } from '../publishers/publisher.schema';
 
 @Module({
   imports: [
-    // 1) Subscriber 스키마 (subscriberConnection)
+    // (A) SubscriberService용 커넥션
     MongooseModule.forFeature(
       [
         { name: Subscriber.name, schema: SubscriberSchema },
-        // 여기에 Publisher도 같이 등록
         { name: Publisher.name, schema: PublisherSchema },
       ],
       'subscriberConnection',
     ),
-    // 2) ScrapFolder 스키마 (scrapfolderConnection)
+
+    // (B) ScrapFolderService용 커넥션
     MongooseModule.forFeature(
       [{ name: ScrapFolder.name, schema: ScrapFolderSchema }],
       'scrapfolderConnection',
     ),
-    // 3) Publisher 스키마 (scrapfolderConnection)
+
+    // (C) PublisherService용 커넥션
     MongooseModule.forFeature(
-      [{ name: Publisher.name, schema: PublisherSchema }],
+      [
+        { name: Publisher.name, schema: PublisherSchema },
+        { name: Subscriber.name, schema: SubscriberSchema },
+      ],
       'publisherConnection',
     ),
   ],
   controllers: [SubscriberController],
   providers: [SubscriberService],
-  exports: [SubscriberService], // 다른 모듈에서 쓰려면 export
+  exports: [SubscriberService],
 })
 export class SubscriberModule {}
