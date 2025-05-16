@@ -1,24 +1,15 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Req,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { Controller } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+//import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 import { PostService } from '../services/post.service';
-import { CreatePostDto } from '../dto/create-post.dto';
-import { UpdatePostDto } from '../dto/update-post.dto';
+//import { CreatePostDto } from '../dto/create-post.dto';
+//import { UpdatePostDto } from '../dto/update-post.dto';
 
 @ApiTags('Posts')
 @Controller('magazines/:magazineId/posts')
-export class PostController {
+export class PostSubscriberController {
   constructor(private readonly postService: PostService) {}
-
+  /*
   @Post()
   @ApiOperation({ summary: '매거진 내부에 포스트 생성' })
   create(
@@ -29,11 +20,11 @@ export class PostController {
     return this.postService.create(magazineId, req.user.userId, dto);
   }
 
-  /*@Get()
+  @Get()
   @ApiOperation({ summary: '매거진 내부 포스트 목록 조회' })
   findAll(@Param('magazineId') magazineId: string) {
     return this.postService.findAllInMagazine(magazineId);
-  }*/
+  }
 
   @Get(':postId')
   @ApiOperation({ summary: '매거진 내부 포스트 상세 조회' })
@@ -64,4 +55,5 @@ export class PostController {
   ) {
     return this.postService.remove(magazineId, postId, req.user.userId);
   }
+    */
 }

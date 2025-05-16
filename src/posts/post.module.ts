@@ -1,17 +1,30 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PostService } from './services/post.service';
-import { PostController } from './controllers/post.controller';
+import { PostMagazineController } from './controllers/post-magazine.controller';
+import { PostSubscriberController } from './controllers/post-subscriber.controller';
 import { Post, PostSchema } from './post.schema';
 //import { Magazine, MagazineSchema } from '../magazines/magazine.schema';
 import { MagazineModule } from '../magazines/magazine.module';
 import { PublisherModule } from '../publishers/publisher.module';
+import { PublisherSchema } from 'src/publishers/publisher.schema';
+import { Publisher } from 'src/publishers/publisher.schema';
+import { Magazine, MagazineSchema } from 'src/magazines/magazine.schema';
 
 @Module({
   imports: [
     // Post 모델 바인딩
     MongooseModule.forFeature(
       [{ name: Post.name, schema: PostSchema }],
+      'postConnection',
+    ),
+
+    MongooseModule.forFeature(
+      [{ name: Publisher.name, schema: PublisherSchema }],
+      'publisherConnection',
+    ),
+    MongooseModule.forFeature(
+      [{ name: Magazine.name, schema: MagazineSchema }],
       'magazineConnection',
     ),
 
@@ -22,8 +35,8 @@ import { PublisherModule } from '../publishers/publisher.module';
     // PublisherService 사용을 위해
     PublisherModule,
   ],
-  controllers: [PostController],
   providers: [PostService],
+  controllers: [PostMagazineController, PostSubscriberController],
   exports: [PostService],
 })
 export class PostModule {}

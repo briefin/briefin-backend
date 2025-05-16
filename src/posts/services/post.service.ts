@@ -4,8 +4,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+//import { Model, Types } from 'mongoose';
 import { Model } from 'mongoose';
-//import { Model } from 'mongoose';
 import { Post, PostDocument } from '../post.schema';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
@@ -16,7 +16,7 @@ import { PublisherService } from 'src/publishers/publisher.service';
 @Injectable()
 export class PostService {
   constructor(
-    @InjectModel(Post.name, 'magazineConnection')
+    @InjectModel(Post.name, 'postConnection')
     private readonly postModel: Model<PostDocument>,
     private readonly magazineService: MagazineService,
     private readonly publisherService: PublisherService,
@@ -31,7 +31,7 @@ export class PostService {
     const magazine = await this.magazineService.findOne(magazineId);
     if (!magazine) throw new NotFoundException('매거진을 찾을 수 없습니다.');
 
-    if (magazine.publisher.toString() !== publisherId)
+    if (magazine.publisher._id.toString() !== publisherId)
       throw new ForbiddenException('포스트 생성 권한이 없습니다.');
 
     // 2) 생성
@@ -72,8 +72,7 @@ export class PostService {
 
   async findOne(magazineId: string, postId: string) {
     const post = await this.postModel
-      .findOne({ _id: postId, magazine: magazineId })
-      .populate('author', 'name')
+      .findOne({ _id: postId, magazine: magazineId }) //publisher 정보 넣는 건 추가 필요
       .exec();
     if (!post) throw new NotFoundException('포스트를 찾을 수 없습니다.');
     return post;
@@ -111,39 +110,5 @@ export class PostService {
       throw new ForbiddenException('삭제 권한이 없습니다.');
 
     return this.postModel.deleteOne({ _id: postId }).exec();
-  }
-
-  /**
-   * 키워드 q 가 제목(title) 또는 본문(content)에 포함된 포스트 검색
-   * q가 유효한 ObjectId 이면 _id 매칭도 수행
-   */
-  async searchPosts(q: string): Promise<PostDocument[]> {
-    return this.postModel
-      .aggregate<PostDocument>([
-        {
-          $search: {
-            index: 'postIndex', // Atlas UI에서 생성한 인덱스 이름
-            text: {
-              query: q,
-              path: ['title', 'content'],
-              fuzzy: { maxEdits: 1, prefixLength: 2 },
-            },
-          },
-        },
-        { $limit: 20 },
-        {
-          $project: {
-            title: 1,
-            content: 1,
-            magazine: 1,
-            publisher: 1,
-            viewCount: 1,
-            createdAt: 1,
-            // 검색 점수(meta)도 필요하면
-            score: { $meta: 'searchScore' },
-          },
-        },
-      ])
-      .exec();
   }
 }
